@@ -54,9 +54,9 @@ export function AppSidebar() {
                             <img
                                 src="/Gemini_Generated_Image_d9cjlzd9cjlzd9cj-removebg-preview.png"
                                 alt="Bench Art Gallery Logo"
-                                className="w-24 h-24 object-contain group-data-[collapsible=icon]:w-8 group-data-[collapsible=icon]:h-8 transition-all"
+                                className="w-24 h-24 object-contain transition-all"
                             />
-                            <span className="text-base font-bold text-neutral-900 dark:text-white tracking-tight text-center leading-tight -mt-4 group-data-[collapsible=icon]:hidden">
+                            <span className="text-base font-bold text-neutral-900 dark:text-white tracking-tight text-center leading-tight mt-2 group-data-[collapsible=icon]:hidden">
                                 Bench Art Gallery
                             </span>
                         </div>

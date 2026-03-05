@@ -5,7 +5,6 @@ import { useState } from 'react';
 import { Upload, X, Image as ImageIcon } from 'lucide-react';
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Dashboard', href: '/dashboard' },
     { title: 'Products', href: '/products' },
     { title: 'Add Artwork', href: '/products/create' },
 ];
@@ -28,6 +27,7 @@ export default function CreateProduct() {
         setDragOver(false);
         const file = e.dataTransfer.files[0];
         if (file) handleFile(file);
+        
     };
 
     return (

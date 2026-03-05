@@ -1,6 +1,7 @@
 import { Head, Link, usePage } from '@inertiajs/react';
 import { useState, useEffect } from 'react';
-import { dashboard, login, register } from '@/routes';
+import { dashboard } from '@/routes';
+import { useAppearance } from '@/hooks/use-appearance';
 
 export default function Welcome({
     canRegister = true,
@@ -8,8 +9,10 @@ export default function Welcome({
     canRegister?: boolean;
 }) {
     const { auth } = usePage().props;
+    const { resolvedAppearance } = useAppearance();
     const [showArtShowcase, setShowArtShowcase] = useState(false);
     const [showGrid, setShowGrid] = useState(false);
+    const isDark = resolvedAppearance === 'dark';
 
     // Auto transition from scatter to grid after 2 seconds
     useEffect(() => {
@@ -94,17 +97,19 @@ export default function Welcome({
             `}</style>
 
             <div
-                className="relative min-h-screen flex flex-col overflow-hidden"
+                className="relative min-h-screen flex flex-col overflow-hidden bg-white dark:bg-neutral-950"
                 style={{
-                    background: 'linear-gradient(135deg, #0a0a0a 0%, #111318 50%, #0d0f14 100%)',
+                    background: isDark 
+                        ? 'linear-gradient(135deg, #0a0a0a 0%, #111318 50%, #0d0f14 100%)'
+                        : 'linear-gradient(135deg, #fafafa 0%, #f5f5f5 50%, #f0f0f0 100%)',
                     fontFamily: "'DM Sans', sans-serif",
                 }}
             >
                 {/* Ambient background blobs with floating animation */}
                 <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                    <div className="absolute -top-32 -left-32 w-96 h-96 rounded-full opacity-10 animate-float" style={{ background: 'radial-gradient(circle, #1e3a8a, transparent)', animationDelay: '0s' }} />
-                    <div className="absolute top-1/3 -right-24 w-80 h-80 rounded-full opacity-10 animate-float" style={{ background: 'radial-gradient(circle, #1d4ed8, transparent)', animationDelay: '2s' }} />
-                    <div className="absolute bottom-0 left-1/3 w-64 h-64 rounded-full opacity-8 animate-float" style={{ background: 'radial-gradient(circle, #0369a1, transparent)', animationDelay: '4s' }} />
+                    <div className="absolute -top-32 -left-32 w-96 h-96 rounded-full opacity-10 animate-float" style={{ background: isDark ? 'radial-gradient(circle, #1e3a8a, transparent)' : 'radial-gradient(circle, #bfdbfe, transparent)', animationDelay: '0s' }} />
+                    <div className="absolute top-1/3 -right-24 w-80 h-80 rounded-full opacity-10 animate-float" style={{ background: isDark ? 'radial-gradient(circle, #1d4ed8, transparent)' : 'radial-gradient(circle, #93c5fd, transparent)', animationDelay: '2s' }} />
+                    <div className="absolute bottom-0 left-1/3 w-64 h-64 rounded-full opacity-8 animate-float" style={{ background: isDark ? 'radial-gradient(circle, #0369a1, transparent)' : 'radial-gradient(circle, #7dd3fc, transparent)', animationDelay: '4s' }} />
                 </div>
 
                 {/* Fine grain overlay */}
@@ -120,29 +125,29 @@ export default function Welcome({
                             alt="Bench Art Gallery"
                             className="w-10 h-10 object-contain"
                         />
-                        <span className="text-white font-semibold text-sm tracking-wide hidden sm:block">Bench Art Gallery</span>
+                        <span className="text-neutral-900 dark:text-white font-semibold text-sm tracking-wide hidden sm:block">Bench Art Gallery</span>
                     </div>
 
                     <nav className="flex items-center gap-3">
                         {auth.user ? (
                             <Link
                                 href={dashboard()}
-                                className="px-5 py-2 rounded-lg text-sm font-medium text-white border border-white/20 hover:bg-white/10 transition-all"
+                                className="px-5 py-2 rounded-lg text-sm font-medium text-neutral-900 dark:text-white border border-neutral-200 dark:border-white/20 hover:bg-neutral-100 dark:hover:bg-white/10 transition-all"
                             >
                                 Dashboard
                             </Link>
                         ) : (
                             <>
                                 <Link
-                                    href={login()}
-                                    className="px-5 py-2 rounded-lg text-sm font-medium text-white/70 hover:text-white transition-colors"
+                                    href="/login"
+                                    className="px-5 py-2 rounded-lg text-sm font-medium text-neutral-600 dark:text-white/70 hover:text-neutral-900 dark:hover:text-white transition-colors"
                                 >
                                     Log in
                                 </Link>
                                 {canRegister && (
                                     <Link
-                                        href={register()}
-                                        className="px-5 py-2 rounded-lg text-sm font-medium text-white border border-white/20 hover:bg-white/10 transition-all"
+                                        href="/register"
+                                        className="px-5 py-2 rounded-lg text-sm font-medium text-neutral-900 dark:text-white border border-neutral-200 dark:border-white/20 hover:bg-neutral-100 dark:hover:bg-white/10 transition-all"
                                     >
                                         Register
                                     </Link>
@@ -168,18 +173,18 @@ export default function Welcome({
 
                     {/* Headline with staggered animation */}
                     <h1
-                        className="text-4xl lg:text-5xl font-black text-white leading-tight mb-2 max-w-3xl"
+                        className="text-4xl lg:text-5xl font-black text-neutral-900 dark:text-white leading-tight mb-2 max-w-3xl"
                         style={{ fontFamily: "'Playfair Display', serif" }}
                     >
                         <span className="block opacity-0 animate-fade-in-up delay-100">
                             Bench
                         </span>
-                        <span className="block text-transparent bg-clip-text opacity-0 animate-fade-in-up delay-200" style={{ backgroundImage: 'linear-gradient(90deg, #60a5fa, #3b82f6, #1d4ed8)' }}>
+                        <span className="block text-transparent bg-clip-text opacity-0 animate-fade-in-up delay-200" style={{ backgroundImage: isDark ? 'linear-gradient(90deg, #60a5fa, #3b82f6, #1d4ed8)' : 'linear-gradient(90deg, #3b82f6, #1d4ed8, #1e40af)' }}>
                             Art Gallery
                         </span>
                     </h1>
 
-                    <p className="text-white/40 text-lg max-w-md mb-4 leading-relaxed font-light opacity-0 animate-fade-in-up delay-300">
+                    <p className="text-neutral-600 dark:text-white/40 text-lg max-w-md mb-4 leading-relaxed font-light opacity-0 animate-fade-in-up delay-300">
                         Manage your artworks, artists, and exhibitions — all in one beautiful platform.
                     </p>
 
@@ -188,24 +193,34 @@ export default function Welcome({
                         {auth.user ? (
                             <Link
                                 href={dashboard()}
-                                className="px-8 py-3.5 rounded-xl text-sm font-semibold text-white transition-all shadow-lg shadow-blue-900/30 hover:shadow-blue-800/50 hover:opacity-90"
-                                style={{ background: 'linear-gradient(135deg, #2563eb, #1d4ed8)' }}
+                                className="px-8 py-3.5 rounded-xl text-sm font-semibold text-white transition-all shadow-lg"
+                                style={{ 
+                                    background: isDark 
+                                        ? 'linear-gradient(135deg, #2563eb, #1d4ed8)' 
+                                        : 'linear-gradient(135deg, #3b82f6, #2563eb)',
+                                    boxShadow: isDark ? '0 20px 25px -5px rgba(37, 99, 235, 0.3)' : '0 20px 25px -5px rgba(59, 130, 246, 0.3)'
+                                }}
                             >
                                 Go to Dashboard →
                             </Link>
                         ) : (
                             <>
                                 <Link
-                                    href={login()}
-                                    className="px-8 py-3.5 rounded-xl text-sm font-semibold text-white transition-all shadow-lg shadow-blue-900/30 hover:shadow-blue-800/50 hover:opacity-90"
-                                    style={{ background: 'linear-gradient(135deg, #57a770, #17926f)' }}
+                                    href="/login"
+                                    className="px-8 py-3.5 rounded-xl text-sm font-semibold text-white transition-all shadow-lg"
+                                    style={{ 
+                                        background: isDark 
+                                            ? 'linear-gradient(135deg, #57a770, #17926f)' 
+                                            : 'linear-gradient(135deg, #10b981, #059669)',
+                                        boxShadow: isDark ? '0 20px 25px -5px rgba(87, 167, 112, 0.3)' : '0 20px 25px -5px rgba(16, 185, 129, 0.3)'
+                                    }}
                                 >
                                     Enter Gallery →
                                 </Link>
                                 {canRegister && (
                                     <Link
-                                        href={register()}
-                                        className="px-8 py-3.5 rounded-xl text-sm font-semibold text-white/60 border border-white/10 hover:border-white/20 hover:text-white/80 transition-all"
+                                        href="/register"
+                                        className="px-8 py-3.5 rounded-xl text-sm font-semibold text-neutral-700 dark:text-white/60 border border-neutral-300 dark:border-white/10 hover:border-neutral-400 hover:text-neutral-900 dark:hover:border-white/20 dark:hover:text-white/80 transition-all"
                                     >
                                         Create Account
                                     </Link>
@@ -221,8 +236,13 @@ export default function Welcome({
                                 setShowArtShowcase(!showArtShowcase);
                                 setShowGrid(false);
                             }}
-                            className="px-4 py-2 rounded-lg text-xs font-semibold text-white/70 border border-white/20 backdrop-blur-md transition-all hover:text-white hover:border-white/40 hover:bg-white/10"
-                            style={{ background: 'rgba(255, 255, 255, 0.1)', backdropFilter: 'blur(2px)' }}
+                            className="px-4 py-2 rounded-lg text-xs font-semibold text-neutral-700 dark:text-white/70 border border-neutral-300 dark:border-white/20 backdrop-blur-md transition-all hover:text-neutral-900 dark:hover:text-white hover:border-neutral-400 dark:hover:border-white/40 hover:bg-neutral-100/50 dark:hover:bg-white/10"
+                            style={{ 
+                                background: isDark 
+                                    ? 'rgba(255, 255, 255, 0.1)' 
+                                    : 'rgba(0, 0, 0, 0.05)',
+                                backdropFilter: 'blur(2px)' 
+                            }}
                         >
                             Art Showcase
                         </button>
@@ -231,7 +251,7 @@ export default function Welcome({
 
                 {/* Art Showcase Modal */}
                 {showArtShowcase && (
-                    <div className="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in">
+                    <div className="absolute inset-0 flex items-center justify-center z-50 animate-fade-in" style={{ background: isDark ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.3)', backdropFilter: 'blur(4px)' }}>
                         <div className="relative w-full h-full flex items-center justify-center">
                             {!showGrid ? (
                                 // Scatter animation phase
@@ -290,17 +310,17 @@ export default function Welcome({
                             ) : (
                                 // Grid phase
                                 <div
-                                    className="relative bg-white/5 border border-white/10 rounded-2xl max-w-5xl w-full mx-4 animate-scale-in flex flex-col"
+                                    className="relative rounded-2xl max-w-5xl w-full mx-4 animate-scale-in flex flex-col bg-white dark:bg-white/5 border border-neutral-200 dark:border-white/10"
                                     style={{ maxHeight: '90vh' }}
                                 >
                                     {/* Sticky Header */}
-                                    <div className="flex items-center justify-between px-6 pt-6 pb-4 shrink-0">
-                                        <h2 className="text-2xl sm:text-3xl font-bold text-white" style={{ fontFamily: "'Playfair Display', serif" }}>
+                                    <div className="flex items-center justify-between px-6 pt-6 pb-4 shrink-0 border-b border-neutral-200 dark:border-white/10">
+                                        <h2 className="text-2xl sm:text-3xl font-bold text-neutral-900 dark:text-white" style={{ fontFamily: "'Playfair Display', serif" }}>
                                             Art Gallery
                                         </h2>
                                         <button
                                             onClick={() => setShowArtShowcase(false)}
-                                            className="text-white/50 hover:text-white text-3xl leading-none transition-colors"
+                                            className="text-neutral-500 dark:text-white/50 hover:text-neutral-900 dark:hover:text-white text-3xl leading-none transition-colors"
                                         >
                                             ×
                                         </button>
@@ -315,10 +335,10 @@ export default function Welcome({
                                                 className="rounded-lg opacity-0 animate-fade-in-up"
                                                 style={{ animationDelay: `${index * 100}ms` }}
                                             >
-                                                <div className="aspect-square bg-white/5 border border-white/10 rounded-lg overflow-hidden hover:border-white/30 transition-all relative">
+                                                <div className="aspect-square bg-neutral-100 dark:bg-white/5 border border-neutral-300 dark:border-white/10 rounded-lg overflow-hidden hover:border-neutral-400 dark:hover:border-white/30 transition-all relative">
                                                     {/* Fallback label */}
                                                     <div className="absolute inset-0 flex items-center justify-center">
-                                                        <span className="text-white/20 text-sm">Art {index + 1}</span>
+                                                        <span className="text-neutral-400 dark:text-white/20 text-sm">Art {index + 1}</span>
                                                     </div>
                                                     {/* Image */}
                                                     <img
@@ -334,7 +354,7 @@ export default function Welcome({
                                                         }}
                                                     />
                                                     {/* Label overlay at bottom */}
-                                                    <div className="absolute bottom-0 left-0 right-0 z-20 bg-gradient-to-t from-black/60 to-transparent px-4 py-3">
+                                                    <div className="absolute bottom-0 left-0 right-0 z-20 bg-gradient-to-t from-neutral-900/60 dark:from-black/60 to-transparent px-4 py-3">
                                                         <span className="text-white/80 text-sm font-medium">Art {index + 1}</span>
                                                     </div>
                                                 </div>
