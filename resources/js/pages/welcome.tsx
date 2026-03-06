@@ -1,6 +1,6 @@
-import { Head, Link, usePage } from '@inertiajs/react';
+import { Head, Link, usePage, router } from '@inertiajs/react';
 import { useState, useEffect } from 'react';
-import { dashboard } from '@/routes';
+import { dashboard, login, register } from '@/routes';
 import { useAppearance } from '@/hooks/use-appearance';
 
 export default function Welcome({
@@ -13,6 +13,12 @@ export default function Welcome({
     const [showArtShowcase, setShowArtShowcase] = useState(false);
     const [showGrid, setShowGrid] = useState(false);
     const isDark = resolvedAppearance === 'dark';
+    const [fading, setFading] = useState(false);
+
+    const navigateTo = (href: string) => {
+        setFading(true);
+        setTimeout(() => router.visit(href), 400);
+    };
 
     // Auto transition from scatter to grid after 2 seconds
     useEffect(() => {
@@ -103,6 +109,9 @@ export default function Welcome({
                         ? 'linear-gradient(135deg, #0a0a0a 0%, #111318 50%, #0d0f14 100%)'
                         : 'linear-gradient(135deg, #fafafa 0%, #f5f5f5 50%, #f0f0f0 100%)',
                     fontFamily: "'DM Sans', sans-serif",
+                    opacity: fading ? 0 : 1,
+                    transform: fading ? 'scale(0.98)' : 'scale(1)',
+                    transition: 'opacity 0.4s ease, transform 0.4s ease',
                 }}
             >
                 {/* Ambient background blobs with floating animation */}
@@ -130,27 +139,27 @@ export default function Welcome({
 
                     <nav className="flex items-center gap-3">
                         {auth.user ? (
-                            <Link
-                                href={dashboard()}
+                            <button
+                                onClick={() => navigateTo(dashboard())}
                                 className="px-5 py-2 rounded-lg text-sm font-medium text-neutral-900 dark:text-white border border-neutral-200 dark:border-white/20 hover:bg-neutral-100 dark:hover:bg-white/10 transition-all"
                             >
                                 Dashboard
-                            </Link>
+                            </button>
                         ) : (
                             <>
-                                <Link
-                                    href="/login"
+                                <button
+                                    onClick={() => navigateTo(login())}
                                     className="px-5 py-2 rounded-lg text-sm font-medium text-neutral-600 dark:text-white/70 hover:text-neutral-900 dark:hover:text-white transition-colors"
                                 >
                                     Log in
-                                </Link>
+                                </button>
                                 {canRegister && (
-                                    <Link
-                                        href="/register"
+                                    <button
+                                        onClick={() => navigateTo(register())}
                                         className="px-5 py-2 rounded-lg text-sm font-medium text-neutral-900 dark:text-white border border-neutral-200 dark:border-white/20 hover:bg-neutral-100 dark:hover:bg-white/10 transition-all"
                                     >
                                         Register
-                                    </Link>
+                                    </button>
                                 )}
                             </>
                         )}
@@ -173,8 +182,7 @@ export default function Welcome({
 
                     {/* Headline with staggered animation */}
                     <h1
-                        className="text-4xl lg:text-5xl font-black text-neutral-900 dark:text-white leading-tight mb-2 max-w-3xl"
-                        style={{ fontFamily: "'Playfair Display', serif" }}
+                        className="text-4xl lg:text-5xl font-light text-neutral-900 dark:text-white leading-tight mb-2 max-w-3xl"
                     >
                         <span className="block opacity-0 animate-fade-in-up delay-100">
                             Bench
@@ -203,30 +211,7 @@ export default function Welcome({
                             >
                                 Go to Dashboard →
                             </Link>
-                        ) : (
-                            <>
-                                <Link
-                                    href="/login"
-                                    className="px-8 py-3.5 rounded-xl text-sm font-semibold text-white transition-all shadow-lg"
-                                    style={{ 
-                                        background: isDark 
-                                            ? 'linear-gradient(135deg, #57a770, #17926f)' 
-                                            : 'linear-gradient(135deg, #10b981, #059669)',
-                                        boxShadow: isDark ? '0 20px 25px -5px rgba(87, 167, 112, 0.3)' : '0 20px 25px -5px rgba(16, 185, 129, 0.3)'
-                                    }}
-                                >
-                                    Enter Gallery →
-                                </Link>
-                                {canRegister && (
-                                    <Link
-                                        href="/register"
-                                        className="px-8 py-3.5 rounded-xl text-sm font-semibold text-neutral-700 dark:text-white/60 border border-neutral-300 dark:border-white/10 hover:border-neutral-400 hover:text-neutral-900 dark:hover:border-white/20 dark:hover:text-white/80 transition-all"
-                                    >
-                                        Create Account
-                                    </Link>
-                                )}
-                            </>
-                        )}
+                        ) : null}
                     </div>
 
                     {/* Art Showcase Button */}
