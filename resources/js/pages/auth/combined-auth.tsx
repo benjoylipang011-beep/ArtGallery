@@ -8,13 +8,90 @@ import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
 import { store as loginStore } from '@/routes/login';
 import { store as registerStore } from '@/routes/register';
-import { request } from '@/routes/password';
+import { request, email as passwordEmail } from '@/routes/password';
 
 type Props = {
     status?: string;
     canResetPassword: boolean;
     canRegister: boolean;
 };
+
+// ── Toast notification ────────────────────────────────────────────────────────
+function Toast({ message, index, onClose }: { message: string; index: number; onClose: () => void }) {
+    const [visible, setVisible] = useState(false);
+
+    useEffect(() => {
+        const raf = requestAnimationFrame(() => setVisible(true));
+        const auto = setTimeout(() => {
+            setVisible(false);
+            setTimeout(onClose, 400);
+        }, 4000);
+        return () => { cancelAnimationFrame(raf); clearTimeout(auto); };
+    }, []);
+
+    const dismiss = () => { setVisible(false); setTimeout(onClose, 400); };
+
+    return (
+        <div
+            style={{
+                position: 'fixed',
+                top: 24 + index * 88,
+                right: 24,
+                zIndex: 9999,
+                minWidth: 300,
+                maxWidth: 380,
+                transform: visible ? 'translateX(0)' : 'translateX(calc(100% + 40px))',
+                opacity: visible ? 1 : 0,
+                transition: 'transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease',
+            }}
+        >
+            <div className="relative flex items-start gap-3 overflow-hidden rounded-2xl border border-red-200 bg-white px-4 py-3.5 shadow-2xl dark:border-red-800/40 dark:bg-neutral-900">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/50">
+                    <svg viewBox="0 0 20 20" className="h-4 w-4 fill-red-500 dark:fill-red-400">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                </div>
+                <div className="flex-1 pt-0.5">
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white">Registration failed</p>
+                    <p className="mt-0.5 text-sm text-gray-500 dark:text-neutral-400">{message}</p>
+                </div>
+                <button
+                    type="button"
+                    onClick={dismiss}
+                    className="shrink-0 text-gray-400 transition-colors hover:text-gray-600 dark:text-neutral-500 dark:hover:text-neutral-300"
+                    aria-label="Dismiss"
+                >
+                    <svg viewBox="0 0 20 20" className="h-4 w-4 fill-current">
+                        <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
+                    </svg>
+                </button>
+                <div className="absolute bottom-0 left-0 h-1 w-full overflow-hidden rounded-b-2xl bg-red-100 dark:bg-red-900/30">
+                    <div
+                        className="h-full bg-red-400 dark:bg-red-500"
+                        style={{
+                            width: visible ? '0%' : '100%',
+                            transition: visible ? 'width 4s linear' : 'none',
+                        }}
+                    />
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function ToastList({ toasts, onDismiss }: {
+    toasts: { id: number; message: string }[];
+    onDismiss: (id: number) => void;
+}) {
+    return (
+        <>
+            {toasts.map((t, i) => (
+                <Toast key={t.id} message={t.message} index={i} onClose={() => onDismiss(t.id)} />
+            ))}
+        </>
+    );
+}
+
 
 // ── Social icon data ──────────────────────────────────────────────────────────
 const SOCIAL_ICONS = [
@@ -68,34 +145,166 @@ function EyeOff() {
     );
 }
 
-// ── Password input with eye toggle ────────────────────────────────────────────
-function PasswordInput({ id, name, placeholder, autoComplete }: {
+// ── Validation helpers ────────────────────────────────────────────────────────
+// Blocks emojis and special characters — letters, spaces, hyphens, apostrophes only
+const EMOJI_REGEX = /[\u{1F000}-\u{1FFFF}\u{2600}-\u{27BF}\u{2300}-\u{23FF}\u{2B00}-\u{2BFF}\u{FE00}-\u{FEFF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA9F}]/u;
+const SPECIAL_CHAR_NAME_REGEX = /[^a-zA-Z\s'\-\.]/;
+
+function sanitizeName(value: string): string {
+    // Strip emojis and special characters, keep letters/spaces/hyphens/apostrophes/dots
+    return value.replace(new RegExp(EMOJI_REGEX.source, 'gu'), '').replace(SPECIAL_CHAR_NAME_REGEX, (char) => {
+        // Replace disallowed char silently
+        return '';
+    });
+}
+
+// Password: must be 6+ chars, at least 1 letter and 1 number, no emojis
+function validatePassword(value: string): { valid: boolean; strength: number; hint: string } {
+    if (value.length === 0) return { valid: false, strength: 0, hint: '' };
+    if (EMOJI_REGEX.test(value)) return { valid: false, strength: 0, hint: 'Emojis are not allowed' };
+    if (value.length < 6) return { valid: false, strength: 1, hint: 'At least 6 characters required' };
+    const hasLetter = /[a-zA-Z]/.test(value);
+    const hasNumber = /[0-9]/.test(value);
+    if (!hasLetter) return { valid: false, strength: 2, hint: 'Must include at least one letter' };
+    if (!hasNumber) return { valid: false, strength: 2, hint: 'Must include at least one number' };
+    // Strength scoring
+    const hasUpper = /[A-Z]/.test(value);
+    const hasLower = /[a-z]/.test(value);
+    const hasSpecial = /[^a-zA-Z0-9]/.test(value);
+    const long = value.length >= 10;
+    const score = [hasLetter, hasNumber, hasUpper && hasLower, hasSpecial, long].filter(Boolean).length;
+    const hints = ['Weak', 'Fair', 'Good', 'Strong', 'Very strong'];
+    return { valid: true, strength: score, hint: hints[Math.min(score - 1, 4)] };
+}
+
+// ── Name input with validation ─────────────────────────────────────────────────
+function NameInput({ id, name, placeholder }: { id: string; name: string; placeholder: string }) {
+    const [value, setValue] = useState('');
+    const [error, setError] = useState('');
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const raw = e.target.value;
+        if (EMOJI_REGEX.test(raw)) {
+            setError('Emojis are not allowed');
+            e.target.value = sanitizeName(raw);
+            setValue(e.target.value);
+            return;
+        }
+        if (SPECIAL_CHAR_NAME_REGEX.test(raw)) {
+            setError('Special characters are not allowed');
+            e.target.value = sanitizeName(raw);
+            setValue(e.target.value);
+            return;
+        }
+        setError('');
+        setValue(raw);
+    };
+
+    return (
+        <div>
+            <Input
+                id={id}
+                type="text"
+                name={name}
+                required
+                autoComplete="name"
+                placeholder={placeholder}
+                value={value}
+                onChange={handleChange}
+                className={inputCls}
+            />
+            {error && (
+                <p className="mt-1 flex items-center gap-1 text-xs text-red-500">
+                    <svg viewBox="0 0 16 16" className="h-3 w-3 fill-current shrink-0"><path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm-.75 3.75a.75.75 0 0 1 1.5 0v3.5a.75.75 0 0 1-1.5 0v-3.5zm.75 6.5a.875.875 0 1 1 0-1.75.875.875 0 0 1 0 1.75z"/></svg>
+                    {error}
+                </p>
+            )}
+        </div>
+    );
+}
+
+// ── Password input with eye toggle + strength ─────────────────────────────────
+function PasswordInput({ id, name, placeholder, autoComplete, showStrength = false }: {
     id: string;
     name: string;
     placeholder: string;
     autoComplete: string;
+    showStrength?: boolean;
 }) {
     const [show, setShow] = useState(false);
+    const [value, setValue] = useState('');
+    const [touched, setTouched] = useState(false);
+    const validation = validatePassword(value);
+
+    const strengthColors = ['', 'bg-red-400', 'bg-orange-400', 'bg-yellow-400', 'bg-teal-400', 'bg-green-500'];
+    const strengthTextColors = ['', 'text-red-500', 'text-orange-500', 'text-yellow-500', 'text-teal-600', 'text-green-600'];
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const raw = e.target.value;
+        // Strip emojis silently
+        if (EMOJI_REGEX.test(raw)) {
+            const cleaned = raw.replace(new RegExp(EMOJI_REGEX.source, 'gu'), '');
+            e.target.value = cleaned;
+            setValue(cleaned);
+            return;
+        }
+        setValue(raw);
+    };
+
+    const showError = touched && value.length > 0 && !validation.valid;
+
     return (
-        <div className="relative">
-            <Input
-                id={id}
-                type={show ? 'text' : 'password'}
-                name={name}
-                required
-                autoComplete={autoComplete}
-                placeholder={placeholder}
-                className={`${inputCls} pr-10`}
-            />
-            <button
-                type="button"
-                onClick={() => setShow(v => !v)}
-                className="absolute inset-y-0 right-3 flex items-center text-gray-400 hover:text-gray-700 transition-colors"
-                tabIndex={-1}
-                aria-label={show ? 'Hide password' : 'Show password'}
-            >
-                {show ? <EyeOff /> : <EyeOpen />}
-            </button>
+        <div>
+            <div className="relative">
+                <Input
+                    id={id}
+                    type={show ? 'text' : 'password'}
+                    name={name}
+                    required
+                    autoComplete={autoComplete}
+                    placeholder={placeholder}
+                    value={value}
+                    onChange={handleChange}
+                    onBlur={() => setTouched(true)}
+                    className={`${inputCls} pr-10 ${showError ? 'border-red-400 dark:border-red-500' : ''}`}
+                />
+                <button
+                    type="button"
+                    onClick={() => setShow(v => !v)}
+                    className="absolute inset-y-0 right-3 flex items-center text-gray-400 hover:text-gray-700 dark:hover:text-neutral-200 transition-colors"
+                    tabIndex={-1}
+                    aria-label={show ? 'Hide password' : 'Show password'}
+                >
+                    {show ? <EyeOff /> : <EyeOpen />}
+                </button>
+            </div>
+
+            {/* Strength bar — only on the main password field */}
+            {showStrength && value.length > 0 && (
+                <div className="mt-2 space-y-1">
+                    <div className="flex gap-1">
+                        {[1, 2, 3, 4, 5].map(i => (
+                            <div
+                                key={i}
+                                className={`h-1 flex-1 rounded-full transition-all duration-300 ${
+                                    i <= validation.strength ? strengthColors[validation.strength] : 'bg-gray-200 dark:bg-neutral-700'
+                                }`}
+                            />
+                        ))}
+                    </div>
+                    <p className={`text-xs font-medium ${strengthTextColors[validation.strength]}`}>
+                        {validation.hint}
+                    </p>
+                </div>
+            )}
+
+            {/* Inline error when not showing strength bar */}
+            {!showStrength && showError && (
+                <p className="mt-1 flex items-center gap-1 text-xs text-red-500">
+                    <svg viewBox="0 0 16 16" className="h-3 w-3 fill-current shrink-0"><path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm-.75 3.75a.75.75 0 0 1 1.5 0v3.5a.75.75 0 0 1-1.5 0v-3.5zm.75 6.5a.875.875 0 1 1 0-1.75.875.875 0 0 1 0 1.75z"/></svg>
+                    {validation.hint}
+                </p>
+            )}
         </div>
     );
 }
@@ -167,10 +376,16 @@ function MobileTealBanner({ title, subtitle, buttonLabel, onClick }: {
 export default function CombinedAuth({ status, canResetPassword, canRegister }: Props) {
     const { url } = usePage();
     const [isLogin, setIsLogin] = useState(!url.includes('/register'));
+    const [isForgotPassword, setIsForgotPassword] = useState(false);
     const [mounted, setMounted] = useState(false);
+    const [isDark, setIsDark] = useState(false);
     const [mobileHeight, setMobileHeight] = useState<number | undefined>(undefined);
+    const [toasts, setToasts] = useState<{ id: number; message: string }[]>([]);
+    const showToast = (message: string) => setToasts(prev => [...prev, { id: Date.now(), message }]);
+    const dismissToast = (id: number) => setToasts(prev => prev.filter(t => t.id !== id));
     const panel1Ref = useRef<HTMLDivElement>(null);
     const panel2Ref = useRef<HTMLDivElement>(null);
+    const panel3Ref = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         const t = setTimeout(() => setMounted(true), 30);
@@ -178,27 +393,79 @@ export default function CombinedAuth({ status, canResetPassword, canRegister }: 
     }, []);
 
     useEffect(() => {
+        const check = () => setIsDark(document.documentElement.classList.contains('dark'));
+        check();
+        const observer = new MutationObserver(check);
+        observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+        return () => observer.disconnect();
+    }, []);
+
+    useEffect(() => {
         const updateHeight = () => {
-            const activePanel = isLogin ? panel1Ref.current : panel2Ref.current;
+            const activePanel = isForgotPassword ? panel3Ref.current : isLogin ? panel1Ref.current : panel2Ref.current;
             if (activePanel) setMobileHeight(activePanel.offsetHeight);
         };
         updateHeight();
         window.addEventListener('resize', updateHeight);
         return () => window.removeEventListener('resize', updateHeight);
-    }, [isLogin]);
+    }, [isLogin, isForgotPassword]);
 
     return (
         <>
-            <Head title={isLogin ? 'Log in' : 'Register'} />
+            <Head title={isForgotPassword ? 'Forgot Password' : isLogin ? 'Log in' : 'Register'} />
+            <ToastList toasts={toasts} onDismiss={dismissToast} />
 
-            {/* Full-page gradient background */}
-            <div className="flex min-h-dvh items-center justify-center bg-gradient-to-br from-green-900 via-green-700 to-yellow-600 dark:from-neutral-950 dark:via-neutral-900 dark:to-neutral-800 px-4 py-8"
+            {/* Full-page gradient background — light: blue-to-gold | dark: deep navy */}
+            <div className="relative flex min-h-dvh items-center justify-center overflow-hidden px-4 py-8"
                 style={{
+                    background: isDark
+                        ? 'linear-gradient(135deg, #0f172a 0%, #1a2744 50%, #0f2027 100%)'
+                        : 'linear-gradient(135deg, #417bb5 0%, #b0974b 100%)',
                     opacity: mounted ? 1 : 0,
                     transform: mounted ? 'scale(1)' : 'scale(1.02)',
-                    transition: 'opacity 0.4s ease, transform 0.4s ease',
+                    transition: 'opacity 0.4s ease, transform 0.4s ease, background 0.6s ease',
                 }}
             >
+                {/* Grid lines overlay */}
+                <div style={{
+                    position: 'absolute', inset: 0,
+                    backgroundImage: isDark
+                        ? 'linear-gradient(to right, #334155 1px, transparent 1px), linear-gradient(to bottom, #334155 1px, transparent 1px)'
+                        : 'linear-gradient(to right, #e2e8f0 1px, transparent 1px), linear-gradient(to bottom, #e2e8f0 1px, transparent 1px)',
+                    backgroundSize: '40px 40px',
+                    opacity: isDark ? 0.2 : 0.3,
+                    pointerEvents: 'none',
+                    transition: 'opacity 0.6s ease',
+                }} />
+                {/* Floating gradient balls */}
+                <div style={{
+                    position: 'absolute', top: -100, right: -50,
+                    width: 250, height: 250, borderRadius: '50%',
+                    background: isDark ? 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)' : 'linear-gradient(135deg, #4ade80 0%, #22c55e 100%)',
+                    filter: 'blur(60px)', opacity: isDark ? 0.2 : 0.4,
+                    animation: 'authFloat 25s infinite ease-in-out', pointerEvents: 'none', transition: 'opacity 0.6s ease',
+                }} />
+                <div style={{
+                    position: 'absolute', bottom: -100, left: -50,
+                    width: 200, height: 200, borderRadius: '50%',
+                    background: isDark ? 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)' : 'linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%)',
+                    filter: 'blur(60px)', opacity: isDark ? 0.2 : 0.4,
+                    animation: 'authFloat 30s infinite ease-in-out reverse', pointerEvents: 'none', transition: 'opacity 0.6s ease',
+                }} />
+                <div style={{
+                    position: 'absolute', top: '40%', left: '5%',
+                    width: 150, height: 150, borderRadius: '50%',
+                    background: isDark ? 'linear-gradient(135deg, #0f766e 0%, #0d9488 100%)' : 'linear-gradient(135deg, #a855f7 0%, #8b5cf6 100%)',
+                    filter: 'blur(60px)', opacity: isDark ? 0.25 : 0.4,
+                    animation: 'authFloat 20s infinite ease-in-out', pointerEvents: 'none', transition: 'opacity 0.6s ease',
+                }} />
+                <style>{`
+                    @keyframes authFloat {
+                        0%, 100% { transform: translate(0, 0) rotate(0deg); }
+                        33% { transform: translate(20px, -30px) rotate(120deg); }
+                        66% { transform: translate(-15px, 15px) rotate(240deg); }
+                    }
+                `}</style>
 
                 {/* ── Outer card: max-w-4xl matches Image 1's wider proportions ── */}
                 <div className="relative w-full max-w-4xl overflow-hidden rounded-3xl bg-white shadow-2xl dark:bg-neutral-900 dark:shadow-black/50">
@@ -211,17 +478,21 @@ export default function CombinedAuth({ status, canResetPassword, canRegister }: 
                         <div
                             className="flex items-start transition-transform duration-700 ease-in-out will-change-transform"
                             style={{
-                                width: '200%',
-                                transform: isLogin ? 'translateX(0%)' : 'translateX(-50%)',
+                                width: '300%',
+                                transform: isForgotPassword
+                                    ? 'translateX(-66.666%)'
+                                    : isLogin
+                                        ? 'translateX(0%)'
+                                        : 'translateX(-33.333%)',
                             }}
                         >
                             {/* Mobile Panel 1 — Sign In */}
-                            <div ref={panel1Ref} className="flex flex-col" style={{ width: '50%' }}>
+                            <div ref={panel1Ref} className="flex flex-col" style={{ width: '33.333%' }}>
                                 <MobileTealBanner
                                     title="New Here?"
                                     subtitle="Sign up and discover a great amount of new opportunities!"
                                     buttonLabel="SIGN UP"
-                                    onClick={() => setIsLogin(false)}
+                                    onClick={() => { setIsLogin(false); setIsForgotPassword(false); }}
                                 />
                                 <div className="px-6 pt-6 pb-3">
                                     <h2 className="mb-5 text-center text-2xl font-extrabold tracking-tight text-gray-900 dark:text-white">
@@ -255,9 +526,13 @@ export default function CombinedAuth({ status, canResetPassword, canRegister }: 
                                                         <span className="text-xs text-gray-600 dark:text-neutral-400">Remember me</span>
                                                     </label>
                                                     {canResetPassword && (
-                                                        <TextLink href={request()} className="text-xs text-teal-700 hover:underline">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setIsForgotPassword(true)}
+                                                            className="text-xs text-teal-700 hover:underline"
+                                                        >
                                                             Forgot password?
-                                                        </TextLink>
+                                                        </button>
                                                     )}
                                                 </div>
                                                 <Button type="submit"
@@ -272,12 +547,12 @@ export default function CombinedAuth({ status, canResetPassword, canRegister }: 
                             </div>
 
                             {/* Mobile Panel 2 — Register */}
-                            <div ref={panel2Ref} className="flex flex-col" style={{ width: '50%' }}>
+                            <div ref={panel2Ref} className="flex flex-col" style={{ width: '33.333%' }}>
                                 <MobileTealBanner
                                     title="Already have an account?"
                                     subtitle="Sign in and pick up right where you left off!"
                                     buttonLabel="SIGN IN"
-                                    onClick={() => setIsLogin(true)}
+                                    onClick={() => { setIsLogin(true); setIsForgotPassword(false); }}
                                 />
                                 <div className="px-6 pt-6 pb-6">
                                     <h2 className="mb-4 text-center text-2xl font-extrabold tracking-tight text-gray-900 dark:text-white">
@@ -293,24 +568,24 @@ export default function CombinedAuth({ status, canResetPassword, canRegister }: 
                                         {...registerStore.form()}
                                         resetOnSuccess={['password', 'password_confirmation']}
                                         className="space-y-3"
+                                        onError={(errors) => {
+                                            if (errors.email) showToast(errors.email);
+                                            if (errors.name) showToast(errors.name);
+                                        }}
                                     >
                                         {({ processing, errors }) => (
                                             <>
                                                 <div>
-                                                    <Input id="m-reg-name" type="text" name="name" required
-                                                        autoComplete="name" placeholder="Full Name"
-                                                        className={inputCls} />
-                                                    <InputError message={errors.name} className="mt-1 text-xs" />
+                                                    <NameInput id="m-reg-name" name="name" placeholder="Full Name" />
                                                 </div>
                                                 <div>
                                                     <Input id="m-reg-email" type="email" name="email" required
                                                         autoComplete="email" placeholder="Email Address"
-                                                        className={inputCls} />
-                                                    <InputError message={errors.email} className="mt-1 text-xs" />
+                                                        className={`${inputCls} ${errors.email ? 'border-red-400 dark:border-red-500' : ''}`} />
                                                 </div>
                                                 <div>
                                                     <PasswordInput id="m-reg-password" name="password"
-                                                        placeholder="Password" autoComplete="new-password" />
+                                                        placeholder="Password (6+ chars, letters & numbers)" autoComplete="new-password" showStrength />
                                                     <InputError message={errors.password} className="mt-1 text-xs" />
                                                 </div>
                                                 <div>
@@ -328,14 +603,66 @@ export default function CombinedAuth({ status, canResetPassword, canRegister }: 
                                     </Form>
                                 </div>
                             </div>
+
+                            {/* Mobile Panel 3 — Forgot Password */}
+                            <div ref={panel3Ref} className="flex flex-col" style={{ width: '33.333%' }}>
+                                <div
+                                    className="relative overflow-hidden flex flex-col items-center justify-center gap-4 px-6 py-10 text-center mx-3 mt-3 rounded-3xl"
+                                    style={{ background: 'linear-gradient(145deg, #0d4a47 0%, #0f766e 55%, #115e59 100%)' }}
+                                >
+                                    <div className="absolute rounded-full bg-white/10" style={{ width: 150, height: 150, bottom: -40, right: -40 }} />
+                                    <div className="absolute rounded-full bg-white/[0.07]" style={{ width: 100, height: 100, top: -30, left: -30 }} />
+                                    <img
+                                        src="/Gemini_Generated_Image_d9cjlzd9cjlzd9cj-removebg-preview.png"
+                                        alt="Logo"
+                                        className="relative h-14 w-14 rounded-2xl object-contain shadow-lg"
+                                        onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                                    />
+                                    <h2 className="relative text-2xl font-extrabold text-white">Forgot Password?</h2>
+                                    <p className="relative text-sm leading-relaxed text-teal-200">Enter your email and we'll send you a reset link</p>
+                                </div>
+                                <div className="px-6 pt-6 pb-6">
+                                    {status && (
+                                        <div className="mb-4 rounded-xl bg-green-50 px-4 py-3 text-center text-sm font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                                            {status}
+                                        </div>
+                                    )}
+                                    <Form {...passwordEmail.form()} className="space-y-4">
+                                        {({ processing, errors }) => (
+                                            <>
+                                                <div>
+                                                    <Input
+                                                        id="fp-email"
+                                                        type="email"
+                                                        name="email"
+                                                        required
+                                                        autoComplete="email"
+                                                        placeholder="Email Address"
+                                                        className={inputCls}
+                                                    />
+                                                    <InputError message={errors.email} className="mt-1 text-xs" />
+                                                </div>
+                                                <Button type="submit"
+                                                    className="h-11 w-full rounded-full bg-yellow-400 font-bold text-gray-900 hover:bg-yellow-500 active:bg-yellow-600"
+                                                    disabled={processing}>
+                                                    {processing && <Spinner />} SEND RESET LINK
+                                                </Button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => { setIsForgotPassword(false); setIsLogin(true); }}
+                                                    className="w-full text-center text-sm text-teal-700 hover:underline dark:text-teal-400"
+                                                >
+                                                    ← Back to Sign In
+                                                </button>
+                                            </>
+                                        )}
+                                    </Form>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    {/* ══════════════════════════════════════════════
-                        DESKTOP LAYOUT  (hidden below md)
-                        Two-column grid + absolute sliding teal panel.
-                        min-h-[580px] matches the taller Image 1 proportions.
-                    ══════════════════════════════════════════════ */}
+                  
                     <div className="hidden md:block">
                         <div className="grid min-h-[580px] grid-cols-2">
 
@@ -375,9 +702,13 @@ export default function CombinedAuth({ status, canResetPassword, canRegister }: 
                                                         <span className="text-xs text-gray-600 dark:text-neutral-400">Remember me</span>
                                                     </label>
                                                     {canResetPassword && (
-                                                        <TextLink href={request()} className="text-xs text-teal-700 hover:underline">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setIsForgotPassword(true)}
+                                                            className="text-xs text-teal-700 hover:underline"
+                                                        >
                                                             Forgot password?
-                                                        </TextLink>
+                                                        </button>
                                                     )}
                                                 </div>
                                                 <Button type="submit"
@@ -410,24 +741,28 @@ export default function CombinedAuth({ status, canResetPassword, canRegister }: 
                                             <div className="h-px flex-1 bg-gray-200 dark:bg-neutral-700" />
                                         </div>
 
-                                        <Form {...registerStore.form()} resetOnSuccess={['password', 'password_confirmation']} className="space-y-3">
+                                        <Form
+                                            {...registerStore.form()}
+                                            resetOnSuccess={['password', 'password_confirmation']}
+                                            className="space-y-3"
+                                            onError={(errors) => {
+                                                if (errors.email) showToast(errors.email);
+                                                if (errors.name) showToast(errors.name);
+                                            }}
+                                        >
                                             {({ processing, errors }) => (
                                                 <>
                                                     <div>
-                                                        <Input id="register-name" type="text" name="name" required
-                                                            autoComplete="name" placeholder="Full Name"
-                                                            className={inputCls} />
-                                                        <InputError message={errors.name} className="mt-1 text-xs" />
+                                                        <NameInput id="register-name" name="name" placeholder="Full Name" />
                                                     </div>
                                                     <div>
                                                         <Input id="register-email" type="email" name="email" required
                                                             autoComplete="email" placeholder="Email Address"
-                                                            className={inputCls} />
-                                                        <InputError message={errors.email} className="mt-1 text-xs" />
+                                                            className={`${inputCls} ${errors.email ? 'border-red-400 dark:border-red-500' : ''}`} />
                                                     </div>
                                                     <div>
                                                         <PasswordInput id="register-password" name="password"
-                                                            placeholder="Password" autoComplete="new-password" />
+                                                            placeholder="Password (6+ chars, letters & numbers)" autoComplete="new-password" showStrength />
                                                         <InputError message={errors.password} className="mt-1 text-xs" />
                                                     </div>
                                                     <div>
@@ -457,6 +792,9 @@ export default function CombinedAuth({ status, canResetPassword, canRegister }: 
                                 borderRadius: isLogin
                                     ? '2.5rem 1.5rem 1.5rem 2.5rem'
                                     : '1.5rem 2.5rem 2.5rem 1.5rem',
+                                opacity: isForgotPassword ? 0 : 1,
+                                pointerEvents: isForgotPassword ? 'none' : 'auto',
+                                transition: 'left 0.7s ease-in-out, opacity 0.3s ease',
                             }}
                         >
                             <div className="absolute rounded-full bg-white/10" style={{ width: 220, height: 220, bottom: -60, right: -60 }} />
@@ -502,6 +840,68 @@ export default function CombinedAuth({ status, canResetPassword, canRegister }: 
                                         </button>
                                     </>
                                 )}
+                            </div>
+                        </div>
+
+                        {/* ── Forgot Password overlay (desktop) — slides in over full card ── */}
+                        <div
+                            className="absolute inset-0 flex items-center justify-center transition-all duration-500 ease-in-out"
+                            style={{
+                                background: 'linear-gradient(145deg, #0d4a47 0%, #0f766e 55%, #115e59 100%)',
+                                opacity: isForgotPassword ? 1 : 0,
+                                pointerEvents: isForgotPassword ? 'auto' : 'none',
+                                transform: isForgotPassword ? 'scale(1)' : 'scale(1.04)',
+                            }}
+                        >
+                            <div className="absolute rounded-full bg-white/10" style={{ width: 300, height: 300, bottom: -80, right: -80 }} />
+                            <div className="absolute rounded-full bg-white/[0.06]" style={{ width: 200, height: 200, top: -60, left: -60 }} />
+
+                            <div className="relative w-full max-w-sm px-10 text-center">
+                                <img
+                                    src="/Gemini_Generated_Image_d9cjlzd9cjlzd9cj-removebg-preview.png"
+                                    alt="Logo"
+                                    className="mx-auto mb-4 h-16 w-16 rounded-2xl object-contain shadow-lg"
+                                    onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                                />
+                                <h2 className="mb-1 text-3xl font-extrabold text-white">Forgot Password?</h2>
+                                <p className="mb-6 text-sm leading-relaxed text-teal-200">
+                                    Enter your email and we'll send you a reset link
+                                </p>
+
+                                {status && (
+                                    <div className="mb-4 rounded-xl bg-white/10 px-4 py-3 text-sm font-medium text-white">
+                                        {status}
+                                    </div>
+                                )}
+
+                                <Form {...passwordEmail.form()} className="space-y-4">
+                                    {({ processing, errors }) => (
+                                        <>
+                                            <Input
+                                                id="d-fp-email"
+                                                type="email"
+                                                name="email"
+                                                required
+                                                autoComplete="email"
+                                                placeholder="Email Address"
+                                                className="h-11 w-full rounded-lg border border-white/30 bg-white/10 text-white placeholder:text-teal-200 focus:border-white focus:outline-none focus:ring-0"
+                                            />
+                                            <InputError message={errors.email} className="mt-1 text-xs text-red-300" />
+                                            <Button type="submit"
+                                                className="h-11 w-full rounded-full bg-yellow-400 font-bold text-gray-900 hover:bg-yellow-500 active:bg-yellow-600"
+                                                disabled={processing}>
+                                                {processing && <Spinner />} SEND RESET LINK
+                                            </Button>
+                                            <button
+                                                type="button"
+                                                onClick={() => { setIsForgotPassword(false); setIsLogin(true); }}
+                                                className="w-full text-center text-sm font-medium text-teal-200 hover:text-white transition-colors"
+                                            >
+                                                ← Back to Sign In
+                                            </button>
+                                        </>
+                                    )}
+                                </Form>
                             </div>
                         </div>
                     </div>
