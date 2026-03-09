@@ -1,137 +1,251 @@
-import { Head } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
-import { dashboard } from '@/routes';
+import { useState, useCallback } from 'react';
+import axios from 'axios';
 
 const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Dashboard',
-        href: dashboard(),
-    },
+    { title: 'Dashboard', href: '/dashboard' },
 ];
 
-// --- Stat Card ---
-function StatCard({ label, value, sub, accent }: { label: string; value: string; sub: string; accent: string }) {
+// ── Types ──────────────────────────────────────────────────────────────────────
+interface Artwork {
+    id: number;
+    title: string;
+    artist: string;
+    medium: string;
+    year: number;
+    price: number;
+    category: string;
+    status: string;
+    image: string | null;
+    saved: boolean;
+}
+
+interface SavedArtwork {
+    id: number;
+    title: string;
+    artist: string;
+    medium: string;
+    price: number;
+    image: string | null;
+}
+
+interface Stats {
+    totalArtworks: number;
+    savedCount: number;
+    liveExhibitions: number;
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────────
+const GRADIENTS = [
+    'bg-gradient-to-br from-blue-400 to-blue-700',
+    'bg-gradient-to-br from-amber-300 to-orange-500',
+    'bg-gradient-to-br from-rose-300 to-pink-600',
+    'bg-gradient-to-br from-neutral-500 to-neutral-800',
+    'bg-gradient-to-br from-yellow-300 to-amber-600',
+    'bg-gradient-to-br from-teal-300 to-cyan-700',
+];
+
+function formatPrice(price: number) {
+    return '₱' + Number(price ?? 0).toLocaleString('en-PH', { minimumFractionDigits: 2 });
+}
+
+function csrfToken(): string {
+    return (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content ?? '';
+}
+
+// ── Artwork Card ───────────────────────────────────────────────────────────────
+function ArtworkCard({ artwork, index, onToggleSave }: {
+    artwork: Artwork;
+    index: number;
+    onToggleSave: (id: number) => void;
+}) {
+    const grad = GRADIENTS[index % GRADIENTS.length];
     return (
-        <div className="relative overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border bg-white dark:bg-neutral-900 p-6 flex flex-col gap-2">
-            <div className={`absolute top-0 right-0 w-24 h-24 rounded-bl-full opacity-10 ${accent}`} />
-            <span className="text-xs font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">{label}</span>
-            <span className="text-4xl font-bold text-neutral-900 dark:text-white tracking-tight">{value}</span>
-            <span className="text-sm text-neutral-500 dark:text-neutral-400">{sub}</span>
+        <div className="rounded-xl border border-sidebar-border/70 dark:border-sidebar-border bg-white dark:bg-neutral-900 overflow-hidden flex flex-col hover:shadow-lg transition-shadow duration-200">
+            <div className={`h-44 relative flex items-end justify-between p-3 ${!artwork.image ? grad : ''}`}>
+                {artwork.image && (
+                    <img src={artwork.image} alt={artwork.title}
+                        className="absolute inset-0 w-full h-full object-cover"
+                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                )}
+                <span className="relative z-10 text-white/80 text-xs font-mono drop-shadow">{artwork.medium} · {artwork.year}</span>
+                <span className={`relative z-10 text-xs font-semibold px-2 py-0.5 rounded-full backdrop-blur-sm ${artwork.status === 'available' ? 'bg-white/20 text-white' : 'bg-black/30 text-white/60'}`}>
+                    {artwork.status === 'available' ? 'Available' : 'Sold'}
+                </span>
+            </div>
+            <div className="p-4 flex flex-col gap-1 flex-1">
+                <p className="font-semibold text-neutral-900 dark:text-white text-sm leading-tight truncate">{artwork.title}</p>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400">{artwork.artist}</p>
+                {artwork.category && (
+                    <span className="text-xs text-neutral-400 bg-neutral-100 dark:bg-neutral-800 px-2 py-0.5 rounded-full w-fit">{artwork.category}</span>
+                )}
+                <div className="mt-auto pt-3 flex items-center justify-between">
+                    <span className="text-sm font-bold text-amber-500">{formatPrice(artwork.price)}</span>
+                    <button onClick={() => onToggleSave(artwork.id)}
+                        className={`text-lg leading-none transition-all duration-150 select-none ${artwork.saved ? 'text-rose-500 scale-110' : 'text-neutral-300 hover:text-rose-400'}`}
+                        title={artwork.saved ? 'Unsave' : 'Save'}>
+                        {artwork.saved ? '♥' : '♡'}
+                    </button>
+                </div>
+            </div>
         </div>
     );
 }
 
-// --- Artwork Card ---
-function ArtworkCard({ title, artist, medium, year, color }: { title: string; artist: string; medium: string; year: string; color: string }) {
+// ── Saved Row ──────────────────────────────────────────────────────────────────
+function SavedRow({ artwork, onRemove }: { artwork: SavedArtwork; onRemove: (id: number) => void }) {
     return (
-        <div className="rounded-xl border border-sidebar-border/70 dark:border-sidebar-border bg-white dark:bg-neutral-900 overflow-hidden flex flex-col">
-            <div className={`h-40 ${color} flex items-end p-4`}>
-                <span className="text-white/70 text-xs font-mono">{medium} · {year}</span>
-            </div>
-            <div className="p-4">
-                <p className="font-semibold text-neutral-900 dark:text-white text-sm leading-tight">{title}</p>
-                <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">{artist}</p>
-            </div>
-        </div>
-    );
-}
-
-// --- Activity Row ---
-function ActivityRow({ action, subject, time, dot }: { action: string; subject: string; time: string; dot: string }) {
-    return (
-        <div className="flex items-start gap-3 py-3 border-b border-neutral-100 dark:border-neutral-800 last:border-0">
-            <span className={`mt-1.5 w-2 h-2 rounded-full flex-shrink-0 ${dot}`} />
+        <div className="flex items-center gap-3 py-3 border-b border-neutral-100 dark:border-neutral-800 last:border-0">
+            {artwork.image
+                ? <img src={artwork.image} alt={artwork.title} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                : <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-amber-200 to-amber-500 flex-shrink-0" />
+            }
             <div className="flex-1 min-w-0">
-                <p className="text-sm text-neutral-700 dark:text-neutral-300">
-                    <span className="font-medium">{action}</span> — {subject}
-                </p>
+                <p className="text-sm font-medium text-neutral-800 dark:text-neutral-200 truncate">{artwork.title}</p>
+                <p className="text-xs text-neutral-400">{artwork.artist} · {artwork.medium}</p>
             </div>
-            <span className="text-xs text-neutral-400 whitespace-nowrap">{time}</span>
+            <div className="text-right shrink-0">
+                <p className="text-sm font-bold text-amber-500">{formatPrice(artwork.price)}</p>
+                <button onClick={() => onRemove(artwork.id)} className="text-xs text-neutral-400 hover:text-rose-400 transition-colors mt-0.5">Remove</button>
+            </div>
         </div>
     );
 }
 
+// ── Main Dashboard ─────────────────────────────────────────────────────────────
 export default function Dashboard() {
+    // Pull ALL page props — safely handle anything the controller sends
+    const page = usePage();
+    const rawProps = page.props as Record<string, unknown>;
+
+    const initArtworks: Artwork[]   = Array.isArray(rawProps.artworks)      ? (rawProps.artworks as Artwork[])           : [];
+    const initSaved: SavedArtwork[] = Array.isArray(rawProps.savedArtworks) ? (rawProps.savedArtworks as SavedArtwork[]) : [];
+    const rawStats                  = (rawProps.stats && typeof rawProps.stats === 'object') ? rawProps.stats as Partial<Stats> : {};
+    const initStats: Stats = {
+        totalArtworks:   Number(rawStats.totalArtworks   ?? 0),
+        savedCount:      Number(rawStats.savedCount      ?? 0),
+        liveExhibitions: Number(rawStats.liveExhibitions ?? 0),
+    };
+
+    const [artworks, setArtworks]   = useState<Artwork[]>(initArtworks);
+    const [savedArtworks, setSaved] = useState<SavedArtwork[]>(initSaved);
+    const [stats, setStats]         = useState<Stats>(initStats);
+
+    // ── Toggle save ♡ ──────────────────────────────────────────────────────────
+    const handleToggleSave = useCallback(async (artworkId: number) => {
+        const target = artworks.find(a => a.id === artworkId);
+        if (!target) return;
+        const wasSaved = target.saved;
+
+        setArtworks(prev => prev.map(a => a.id === artworkId ? { ...a, saved: !a.saved } : a));
+        if (wasSaved) {
+            setSaved(prev => prev.filter(a => a.id !== artworkId));
+            setStats(prev => ({ ...prev, savedCount: Math.max(0, prev.savedCount - 1) }));
+        } else {
+            setSaved(prev => [{ id: target.id, title: target.title, artist: target.artist, medium: target.medium, price: target.price, image: target.image }, ...prev]);
+            setStats(prev => ({ ...prev, savedCount: prev.savedCount + 1 }));
+        }
+
+        try {
+            const res = await axios.post(`/artworks/${artworkId}/save`, {}, { headers: { 'X-CSRF-TOKEN': csrfToken() } });
+            setStats(prev => ({ ...prev, savedCount: res.data.savedCount }));
+        } catch {
+            // Rollback
+            setArtworks(prev => prev.map(a => a.id === artworkId ? { ...a, saved: wasSaved } : a));
+            setSaved(wasSaved
+                ? prev => [{ id: target.id, title: target.title, artist: target.artist, medium: target.medium, price: target.price, image: target.image }, ...prev]
+                : prev => prev.filter(a => a.id !== artworkId)
+            );
+            setStats(initStats);
+        }
+    }, [artworks, initStats]);
+
+    // ── Remove saved ────────────────────────────────────────────────────────────
+    const handleRemoveSaved = useCallback(async (artworkId: number) => {
+        setSaved(prev => prev.filter(a => a.id !== artworkId));
+        setArtworks(prev => prev.map(a => a.id === artworkId ? { ...a, saved: false } : a));
+        setStats(prev => ({ ...prev, savedCount: Math.max(0, prev.savedCount - 1) }));
+        try {
+            const res = await axios.delete(`/artworks/${artworkId}/save`, { headers: { 'X-CSRF-TOKEN': csrfToken() } });
+            setStats(prev => ({ ...prev, savedCount: res.data.savedCount }));
+        } catch { /* silent */ }
+    }, []);
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Dashboard" />
             <div className="flex h-full flex-1 flex-col gap-6 overflow-x-auto rounded-xl p-4">
 
                 {/* Welcome Banner */}
-                <div className="rounded-xl bg-gradient-to-r from-neutral-900 to-neutral-700 dark:from-neutral-800 dark:to-neutral-900 p-6 flex items-center justify-between">
+                <div className="rounded-xl bg-gradient-to-r from-neutral-900 via-neutral-800 to-neutral-700 dark:from-neutral-800 dark:to-neutral-900 p-6 flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold text-white tracking-tight">Welcome back to ArtGallery</h1>
-                        <p className="text-neutral-400 text-sm mt-1">Here's what's happening in your gallery today.</p>
+                        <p className="text-amber-400 text-xs font-semibold uppercase tracking-widest mb-1">Welcome back</p>
+                        <h1 className="text-2xl font-bold text-white tracking-tight">Discover Art You'll Love</h1>
+                        <p className="text-neutral-400 text-sm mt-1">Explore curated artworks and upcoming exhibitions.</p>
                     </div>
-                    <div className="hidden md:flex items-center gap-2">
-                        <div className="w-10 h-10 rounded-full bg-amber-400 opacity-80" />
-                        <div className="w-6 h-6 rounded-full bg-rose-400 opacity-60" />
-                        <div className="w-4 h-4 rounded-full bg-sky-400 opacity-60" />
+                    <div className="hidden md:flex flex-col gap-1 items-end">
+                        <a href="/products" className="text-xs bg-amber-400 hover:bg-amber-500 text-neutral-900 font-semibold px-4 py-2 rounded-lg transition-colors">
+                            Browse All Artworks →
+                        </a>
                     </div>
                 </div>
 
-                {/* Stat Cards */}
+                {/* Stats */}
                 <div className="grid gap-4 md:grid-cols-3">
-                    <StatCard
-                        label="Total Artworks"
-                        value="1,284"
-                        sub="+12 added this week"
-                        accent="bg-amber-400"
-                    />
-                    <StatCard
-                        label="Active Artists"
-                        value="47"
-                        sub="3 new onboarded this month"
-                        accent="bg-rose-400"
-                    />
-                    <StatCard
-                        label="Exhibitions"
-                        value="6"
-                        sub="2 currently on display"
-                        accent="bg-sky-400"
-                    />
+                    {([
+                        { label: 'Artworks Available', value: stats.totalArtworks.toLocaleString(), sub: 'Total in the gallery', accent: 'bg-amber-400' },
+                        { label: 'Saved by You', value: stats.savedCount.toLocaleString(), sub: `${stats.savedCount === 1 ? '1 artwork' : stats.savedCount + ' artworks'} saved`, accent: 'bg-rose-400' },
+                        { label: 'Live Exhibitions', value: stats.liveExhibitions.toLocaleString(), sub: 'Open for viewing now', accent: 'bg-sky-400' },
+                    ] as const).map((stat) => (
+                        <div key={stat.label} className="relative overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border bg-white dark:bg-neutral-900 p-6 flex flex-col gap-2">
+                            <div className={`absolute top-0 right-0 w-24 h-24 rounded-bl-full opacity-10 ${stat.accent}`} />
+                            <span className="text-xs font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">{stat.label}</span>
+                            <span className="text-4xl font-bold text-neutral-900 dark:text-white tracking-tight transition-all duration-300">{stat.value}</span>
+                            <span className="text-sm text-neutral-500 dark:text-neutral-400">{stat.sub}</span>
+                        </div>
+                    ))}
                 </div>
 
-                {/* Featured Artworks + Recent Activity */}
+                {/* Artworks + Saved Panel */}
                 <div className="grid gap-4 md:grid-cols-3">
-
-                    {/* Featured Artworks — takes 2 cols */}
                     <div className="md:col-span-2 rounded-xl border border-sidebar-border/70 dark:border-sidebar-border bg-white dark:bg-neutral-900 p-5">
                         <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-sm font-semibold uppercase tracking-widest text-neutral-500 dark:text-neutral-400">Featured Artworks</h2>
-                            <a href="#" className="text-xs text-amber-500 hover:underline">View all →</a>
+                            <h2 className="text-sm font-semibold uppercase tracking-widest text-neutral-500 dark:text-neutral-400">Browse Artworks</h2>
+                            <a href="/products" className="text-xs text-amber-500 hover:underline">View all →</a>
                         </div>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                            <ArtworkCard title="Solitude in Blue" artist="Maria Santos" medium="Oil on Canvas" year="2023" color="bg-gradient-to-br from-blue-400 to-blue-700" />
-                            <ArtworkCard title="Fragment No. 7" artist="Liam Reyes" medium="Mixed Media" year="2024" color="bg-gradient-to-br from-amber-300 to-orange-500" />
-                            <ArtworkCard title="Whispers of Light" artist="Ana Villanueva" medium="Watercolor" year="2023" color="bg-gradient-to-br from-rose-300 to-pink-600" />
-                            <ArtworkCard title="The Watcher" artist="Carlos Bautista" medium="Digital" year="2024" color="bg-gradient-to-br from-neutral-500 to-neutral-800" />
-                            <ArtworkCard title="Golden Hour" artist="Sofia Cruz" medium="Acrylic" year="2022" color="bg-gradient-to-br from-yellow-300 to-amber-600" />
-                            <ArtworkCard title="Echoes" artist="Jun Park" medium="Sculpture" year="2024" color="bg-gradient-to-br from-teal-300 to-cyan-700" />
-                        </div>
+                        {artworks.length === 0
+                            ? <div className="flex items-center justify-center h-40 text-neutral-400 text-sm">No artworks yet.</div>
+                            : <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                {artworks.map((artwork, i) => (
+                                    <ArtworkCard key={artwork.id} artwork={artwork} index={i} onToggleSave={handleToggleSave} />
+                                ))}
+                            </div>
+                        }
                     </div>
 
-                    {/* Recent Activity — 1 col */}
                     <div className="rounded-xl border border-sidebar-border/70 dark:border-sidebar-border bg-white dark:bg-neutral-900 p-5">
-                        <h2 className="text-sm font-semibold uppercase tracking-widest text-neutral-500 dark:text-neutral-400 mb-4">Recent Activity</h2>
-                        <div className="flex flex-col">
-                            <ActivityRow action="Artwork uploaded" subject="Solitude in Blue" time="2m ago" dot="bg-amber-400" />
-                            <ActivityRow action="New artist joined" subject="Jun Park" time="1h ago" dot="bg-sky-400" />
-                            <ActivityRow action="Exhibition updated" subject="Modern Visions 2024" time="3h ago" dot="bg-rose-400" />
-                            <ActivityRow action="Artwork sold" subject="Fragment No. 7" time="5h ago" dot="bg-green-400" />
-                            <ActivityRow action="Comment added" subject="The Watcher" time="8h ago" dot="bg-neutral-400" />
-                            <ActivityRow action="New artist joined" subject="Sofia Cruz" time="1d ago" dot="bg-sky-400" />
-                            <ActivityRow action="Exhibition created" subject="Echoes of the Earth" time="2d ago" dot="bg-rose-400" />
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-sm font-semibold uppercase tracking-widest text-neutral-500 dark:text-neutral-400">Saved Artworks</h2>
+                            <span className="text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded-full font-semibold">{stats.savedCount}</span>
                         </div>
+                        {savedArtworks.length === 0
+                            ? <div className="flex flex-col items-center justify-center h-32 gap-2">
+                                <span className="text-3xl text-neutral-200 dark:text-neutral-700">♡</span>
+                                <p className="text-xs text-neutral-400 text-center">Tap ♡ on any artwork<br />to save it here.</p>
+                            </div>
+                            : <div className="flex flex-col">
+                                {savedArtworks.map(a => <SavedRow key={a.id} artwork={a} onRemove={handleRemoveSaved} />)}
+                            </div>
+                        }
                     </div>
-
                 </div>
 
-                {/* Upcoming Exhibitions */}
+                {/* Exhibitions */}
                 <div className="rounded-xl border border-sidebar-border/70 dark:border-sidebar-border bg-white dark:bg-neutral-900 p-5">
                     <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-sm font-semibold uppercase tracking-widest text-neutral-500 dark:text-neutral-400">Upcoming Exhibitions</h2>
+                        <h2 className="text-sm font-semibold uppercase tracking-widest text-neutral-500 dark:text-neutral-400">Exhibitions</h2>
                         <a href="#" className="text-xs text-amber-500 hover:underline">View all →</a>
                     </div>
                     <div className="overflow-x-auto">

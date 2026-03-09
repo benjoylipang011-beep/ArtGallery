@@ -2,6 +2,7 @@ import { createInertiaApp } from '@inertiajs/react';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+import { route } from 'ziggy-js';
 import '../css/app.css';
 import { initializeTheme } from './hooks/use-appearance';
 
@@ -17,6 +18,9 @@ createInertiaApp({
     setup({ el, App, props }) {
         const root = createRoot(el);
 
+        // Make route() available globally
+        (window as any).route = route;
+
         root.render(
             <StrictMode>
                 <App {...props} />
@@ -28,5 +32,4 @@ createInertiaApp({
     },
 });
 
-// This will set light / dark mode on load...
 initializeTheme();

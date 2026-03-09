@@ -84,4 +84,53 @@ class PasswordResetTest extends TestCase
 
         $response->assertSessionHasErrors('email');
     }
+
+    public function test_password_reset_email_is_sent_to_correct_address(): void
+    {
+        Notification::fake();
+
+        $user = User::factory()->create();
+
+        $this->post(route('password.email'), ['email' => $user->email]);
+
+        Notification::assertSentTo(
+            $user,
+            ResetPassword::class,
+            function ($notification, $channels) use ($user) {
+                // Verify notification goes to user's actual email channel
+                return in_array('mail', $channels);
+            }
+        );
+    }
+
+    public function test_reset_link_is_not_sent_for_unknown_email(): void
+    {
+        Notification::fake();
+
+        $this->post(route('password.email'), ['email' => 'unknown@example.com']);
+
+        Notification::assertNothingSent();
+    }
+
+    public function test_password_cannot_be_reset_with_mismatched_confirmation(): void
+    {
+        Notification::fake();
+
+        $user = User::factory()->create();
+
+        $this->post(route('password.email'), ['email' => $user->email]);
+
+        Notification::assertSentTo($user, ResetPassword::class, function ($notification) use ($user) {
+            $response = $this->post(route('password.update'), [
+                'token' => $notification->token,
+                'email' => $user->email,
+                'password' => 'newpassword1',
+                'password_confirmation' => 'differentpassword1',
+            ]);
+
+            $response->assertSessionHasErrors('password');
+
+            return true;
+        });
+    }
 }
