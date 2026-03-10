@@ -33,26 +33,36 @@ class PasswordResetOtpController extends Controller
                 ],
             ], 422);
         }
-        RateLimiter::increment($key, 600);
 
+        // ✅ FIX: Check if the email exists BEFORE sending OTP
         $user = User::where('email', $request->email)->first();
 
-        if ($user) {
-            PasswordResetOtp::where('email', $request->email)->delete();
-
-            $otp = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
-
-            PasswordResetOtp::create([
-                'email'      => $request->email,
-                'otp'        => $otp,
-                'expires_at' => now()->addMinutes(10),
-            ]);
-
-            $user->notify(new PasswordResetOtpNotification($otp));
+        if (!$user) {
+            return response()->json([
+                'errors' => [
+                    'email' => ['No account found with this email address.'],
+                ],
+            ], 422);
         }
 
+        // Only increment rate limiter after confirming user exists
+        RateLimiter::increment($key, 600);
+
+        // Delete any existing OTP for this email, then create a fresh one
+        PasswordResetOtp::where('email', $request->email)->delete();
+
+        $otp = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+
+        PasswordResetOtp::create([
+            'email'      => $request->email,
+            'otp'        => $otp,
+            'expires_at' => now()->addMinutes(10),
+        ]);
+
+        $user->notify(new PasswordResetOtpNotification($otp));
+
         return response()->json([
-            'message' => 'If that email exists, a reset code has been sent.',
+            'message' => 'A 6-digit reset code has been sent to your email.',
         ]);
     }
 

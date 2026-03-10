@@ -1,9 +1,27 @@
 import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 
-// Tell axios to read the XSRF-TOKEN cookie Laravel sets and send it automatically
-axios.defaults.withCredentials = true;
-axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
+// Read XSRF-TOKEN cookie that Laravel always sets and attach it to every request
+function getCookie(name: string): string {
+    const match = document.cookie.match(new RegExp('(^|;\\s*)' + name + '=([^;]*)'));
+    return match ? decodeURIComponent(match[2]) : '';
+}
+
+const axiosInstance = axios.create({
+    withCredentials: true,
+    headers: {
+        'X-Requested-With': 'XMLHttpRequest',
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+    },
+});
+
+// Attach fresh XSRF token before every request
+axiosInstance.interceptors.request.use((config) => {
+    const token = getCookie('XSRF-TOKEN');
+    if (token) config.headers['X-XSRF-TOKEN'] = token;
+    return config;
+});
 
 import { Form, Head, usePage, router } from '@inertiajs/react';
 import InputError from '@/components/input-error';
@@ -371,6 +389,61 @@ function MobileTealBanner({ title, subtitle, buttonLabel, onClick }: {
     );
 }
 
+// ── Controlled password input (value managed by parent) ──────────────────────
+function ControlledPasswordInput({ id, placeholder, autoComplete, value, onChange, showStrength = false, darkMode = false }: {
+    id: string;
+    placeholder: string;
+    autoComplete: string;
+    value: string;
+    onChange: (val: string) => void;
+    showStrength?: boolean;
+    darkMode?: boolean;
+}) {
+    const [show, setShow] = useState(false);
+    const [touched, setTouched] = useState(false);
+    const validation = validatePassword(value);
+
+    const strengthColors = ['', 'bg-red-400', 'bg-orange-400', 'bg-yellow-400', 'bg-teal-400', 'bg-green-500'];
+    const strengthTextColors = ['', 'text-red-500', 'text-orange-500', 'text-yellow-500', 'text-teal-600', 'text-green-600'];
+    const darkInputCls = 'h-11 w-full rounded-lg pr-10 border border-white/30 bg-white/10 text-white placeholder:text-teal-200 focus:border-white focus:outline-none focus:ring-0';
+    const showError = touched && value.length > 0 && !validation.valid;
+
+    return (
+        <div>
+            <div className="relative">
+                <input
+                    id={id}
+                    type={show ? 'text' : 'password'}
+                    autoComplete={autoComplete}
+                    placeholder={placeholder}
+                    value={value}
+                    onChange={e => onChange(e.target.value)}
+                    onBlur={() => setTouched(true)}
+                    className={darkMode ? darkInputCls : `${inputCls} pr-10 ${showError ? 'border-red-400' : ''}`}
+                />
+                <button type="button" onClick={() => setShow(v => !v)}
+                    className={`absolute inset-y-0 right-3 flex items-center transition-colors ${darkMode ? 'text-teal-200 hover:text-white' : 'text-gray-400 hover:text-gray-700'}`}
+                    tabIndex={-1}>
+                    {show ? <EyeOff /> : <EyeOpen />}
+                </button>
+            </div>
+            {showStrength && value.length > 0 && (
+                <div className="mt-2 space-y-1">
+                    <div className="flex gap-1">
+                        {[1,2,3,4,5].map(i => (
+                            <div key={i} className={`h-1 flex-1 rounded-full transition-all duration-300 ${i <= validation.strength ? strengthColors[validation.strength] : darkMode ? 'bg-white/20' : 'bg-gray-200'}`} />
+                        ))}
+                    </div>
+                    <p className={`text-xs font-medium ${darkMode ? 'text-teal-200' : strengthTextColors[validation.strength]}`}>{validation.hint}</p>
+                </div>
+            )}
+            {!showStrength && showError && (
+                <p className="mt-1 text-xs text-red-400">{validation.hint}</p>
+            )}
+        </div>
+    );
+}
+
 // ── Send OTP email form ───────────────────────────────────────────────────────
 function OtpEmailForm({ inputId, darkMode = false, onSuccess, onBack }: {
     inputId: string;
@@ -389,12 +462,17 @@ function OtpEmailForm({ inputId, darkMode = false, onSuccess, onBack }: {
         setProcessing(true);
 
         try {
-            await axios.post('/forgot-password/otp', { email });
+            // Refresh CSRF cookie before posting (fixes 419 on guest pages)
+            // CSRF handled via cookie interceptor
+            await axiosInstance.post('/forgot-password/otp', { email });
             setProcessing(false);
             onSuccess(email);
         } catch (err: any) {
-            const msg = err?.response?.data?.errors?.email?.[0]
-                ?? err?.response?.data?.message
+            const status = (err as any)?.response?.status;
+            const msg = status === 419
+                ? 'Session expired. Please refresh the page and try again.'
+                : (err as any)?.response?.data?.errors?.email?.[0]
+                ?? (err as any)?.response?.data?.message
                 ?? 'Something went wrong. Please try again.';
             setError(msg);
             setProcessing(false);
@@ -523,9 +601,9 @@ function OtpInput({ value, onChange, darkMode, error }: {
                                 ? '2px solid #f87171'
                                 : filled(i)
                                     ? darkMode ? '2px solid #34d399' : '2px solid #0d9488'
-                                    : darkMode ? '2px solid rgba(255,255,255,0.25)' : '2px solid #e5e7eb',
+                                    : darkMode ? '2px solid #34d399' : '2px solid #e5e7eb',
                             background: darkMode
-                                ? filled(i) ? 'rgba(52,211,153,0.15)' : 'rgba(255,255,255,0.08)'
+                                ? filled(i) ? 'rgba(52,211,153,0.15)' : 'transparent'
                                 : filled(i) ? '#f0fdfa' : '#f9fafb',
                             color: darkMode ? '#ffffff' : '#111827',
                             fontSize: 22,
@@ -584,7 +662,7 @@ function ResetPasswordForm({
 
         try {
             // Verify the OTP against the server before showing password fields
-            await axios.post('/forgot-password/otp/verify', {
+            await axiosInstance.post('/forgot-password/otp/verify', {
                 otp: token,
                 email: sentEmail,
             });
@@ -613,7 +691,7 @@ function ResetPasswordForm({
 
         setProcessing(true);
         try {
-            await axios.post('/forgot-password/otp/reset', {
+            await axiosInstance.post('/forgot-password/otp/reset', {
                 otp: token,
                 email: sentEmail,
                 password,
@@ -729,11 +807,12 @@ function ResetPasswordForm({
 
                     <div>
                         <label className={labelCls}>New Password</label>
-                        <PasswordInput
+                        <ControlledPasswordInput
                             id="rp-password"
-                            name="password"
                             placeholder="New password (6+ chars)"
                             autoComplete="new-password"
+                            value={password}
+                            onChange={setPassword}
                             showStrength
                             darkMode={darkMode}
                         />
@@ -744,11 +823,12 @@ function ResetPasswordForm({
 
                     <div>
                         <label className={labelCls}>Confirm Password</label>
-                        <PasswordInput
+                        <ControlledPasswordInput
                             id="rp-confirm"
-                            name="password_confirmation"
                             placeholder="Confirm new password"
                             autoComplete="new-password"
+                            value={passwordConfirmation}
+                            onChange={setPasswordConfirmation}
                             darkMode={darkMode}
                         />
                         {errors.password_confirmation && (
@@ -815,12 +895,27 @@ export default function CombinedAuth({ status, canResetPassword, canRegister }: 
     useEffect(() => {
         const refs = [panel1Ref, panel2Ref, panel3Ref, panel4Ref];
         const activeRef = refs[activeMobilePanel];
-        const updateHeight = () => {
-            if (activeRef?.current) setMobileHeight(activeRef.current.offsetHeight);
+        if (!activeRef?.current) return;
+
+        // Immediately set height for the active panel
+        setMobileHeight(activeRef.current.scrollHeight);
+
+        // ResizeObserver tracks content changes (e.g. error messages appearing)
+        const ro = new ResizeObserver(() => {
+            if (activeRef.current) setMobileHeight(activeRef.current.scrollHeight);
+        });
+        ro.observe(activeRef.current);
+
+        // Also handle window resize
+        const onResize = () => {
+            if (activeRef.current) setMobileHeight(activeRef.current.scrollHeight);
         };
-        updateHeight();
-        window.addEventListener('resize', updateHeight);
-        return () => window.removeEventListener('resize', updateHeight);
+        window.addEventListener('resize', onResize);
+
+        return () => {
+            ro.disconnect();
+            window.removeEventListener('resize', onResize);
+        };
     }, [activeMobilePanel]);
 
     // Mobile translate: 4 panels, each 25% wide (total 400%)
@@ -905,7 +1000,7 @@ export default function CombinedAuth({ status, canResetPassword, canRegister }: 
                                     buttonLabel="SIGN UP"
                                     onClick={() => { setIsLogin(false); setIsForgotPassword(false); setResetSentEmail(null); }}
                                 />
-                                <div className="px-6 pt-6 pb-3">
+                                <div className="px-6 pt-6 pb-6">
                                     <h2 className="mb-5 text-center text-2xl font-extrabold tracking-tight text-gray-900 dark:text-white">
                                         Sign In
                                     </h2>
@@ -1035,6 +1130,7 @@ export default function CombinedAuth({ status, canResetPassword, canRegister }: 
                                 <div className="px-6 pt-6 pb-6">
                                     <OtpEmailForm
                                         inputId="m-fp-email"
+                                        darkMode={isDark}
                                         onSuccess={(email) => setResetSentEmail(email)}
                                         onBack={() => { setIsForgotPassword(false); setIsLogin(true); }}
                                     />
@@ -1062,6 +1158,7 @@ export default function CombinedAuth({ status, canResetPassword, canRegister }: 
                                 <div className="px-6 pt-5 pb-6">
                                     <ResetPasswordForm
                                         sentEmail={resetSentEmail ?? ''}
+                                        darkMode={isDark}
                                         onBack={() => { setResetSentEmail(null); setIsForgotPassword(false); setIsLogin(true); }}
                                     />
                                 </div>

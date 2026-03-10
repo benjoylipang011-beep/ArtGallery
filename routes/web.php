@@ -5,6 +5,7 @@ use Laravel\Fortify\Features;
 use App\Http\Controllers\ArtworkController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Auth\PasswordResetOtpController;
+use App\Http\Controllers\Auth\SocialAuthController;
 
 Route::inertia('/', 'welcome', [
     'canRegister' => Features::enabled(Features::registration()),
@@ -22,6 +23,14 @@ Route::post('forgot-password/otp/verify', [PasswordResetOtpController::class, 'v
 Route::post('forgot-password/otp/reset', [PasswordResetOtpController::class, 'reset'])
     ->middleware('guest')
     ->name('password.otp.reset');
+
+// ── Social OAuth (Google & Facebook via Laravel Socialite) ────────────────────
+Route::middleware('guest')->group(function () {
+    Route::get('auth/google/redirect',   [SocialAuthController::class, 'redirectToGoogle'])->name('auth.google.redirect');
+    Route::get('auth/google/callback',   [SocialAuthController::class, 'handleGoogleCallback'])->name('auth.google.callback');
+    Route::get('auth/facebook/redirect', [SocialAuthController::class, 'redirectToFacebook'])->name('auth.facebook.redirect');
+    Route::get('auth/facebook/callback', [SocialAuthController::class, 'handleFacebookCallback'])->name('auth.facebook.callback');
+});
 
 Route::middleware(['auth', 'verified'])->group(function () {
 
