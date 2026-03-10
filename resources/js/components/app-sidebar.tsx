@@ -1,5 +1,5 @@
 import { Link, usePage, router } from '@inertiajs/react';
-import { BookOpen, Folder, LayoutGrid, Package, Image, PlusCircle, Tag, Archive, ChevronRight, Bell, X, CheckCheck } from 'lucide-react';
+import { BookOpen, Folder, LayoutGrid, Package, Image, PlusCircle, Tag, Archive, ChevronRight, Bell, X, CheckCheck, ShoppingCart, ClipboardList } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { NavFooter } from '@/components/nav-footer';
 import { NavUser } from '@/components/nav-user';
@@ -289,6 +289,22 @@ export function AppSidebar() {
     const { url } = usePage();
     const isProductActive = url.startsWith('/products');
     const [open, setOpen] = useState(isProductActive);
+    const [cartCount, setCartCount] = useState(0);
+
+    useEffect(() => {
+        const fetchCart = async () => {
+            try {
+                const res = await fetch('/cart/count', {
+                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    setCartCount(data.count ?? 0);
+                }
+            } catch { /* silent */ }
+        };
+        fetchCart();
+    }, [url]); // re-fetch on every page change
 
     return (
         <Sidebar collapsible="icon" variant="inset">
@@ -334,7 +350,7 @@ export function AppSidebar() {
                                         <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                                     </SidebarMenuButton>
                                 </CollapsibleTrigger>
-                                <CollapsibleContent>
+                                <CollapsibleContent className="overflow-hidden data-[state=open]:animate-collapsible-down data-[state=closed]:animate-collapsible-up">
                                     <SidebarMenuSub>
                                         {productSubItems.map((item) => (
                                             <SidebarMenuSubItem key={item.title}>
@@ -353,6 +369,39 @@ export function AppSidebar() {
 
                         {/* Notifications */}
                         <NotificationTrigger />
+
+                        {/* Cart */}
+                        <SidebarMenuItem>
+                            <SidebarMenuButton asChild tooltip="My Cart" isActive={url === '/cart'}>
+                                <Link href="/cart">
+                                    <span className="relative shrink-0">
+                                        <ShoppingCart className="w-4 h-4" />
+                                        {cartCount > 0 && (
+                                            <span className="
+                                                absolute -top-1.5 -right-1.5
+                                                bg-amber-400 text-black text-[8px] font-bold
+                                                min-w-[14px] h-[14px] rounded-full
+                                                flex items-center justify-center px-[3px]
+                                                ring-[1.5px] ring-neutral-900
+                                            ">
+                                                {cartCount > 9 ? '9+' : cartCount}
+                                            </span>
+                                        )}
+                                    </span>
+                                    <span>My Cart</span>
+                                </Link>
+                            </SidebarMenuButton>
+                        </SidebarMenuItem>
+
+                        {/* Orders */}
+                        <SidebarMenuItem>
+                            <SidebarMenuButton asChild tooltip="My Orders" isActive={url === '/orders'}>
+                                <Link href="/orders">
+                                    <ClipboardList className="shrink-0 w-4 h-4" />
+                                    <span>My Orders</span>
+                                </Link>
+                            </SidebarMenuButton>
+                        </SidebarMenuItem>
 
                     </SidebarMenu>
                 </SidebarGroup>

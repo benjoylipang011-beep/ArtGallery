@@ -59,6 +59,10 @@
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-ring: var(--sidebar-ring);
+
+    --animate-collapsible-down: collapsible-down 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    --animate-collapsible-up:   collapsible-up   0.18s cubic-bezier(0.16, 1, 0.3, 1);
+    --animate-fade-in-left:     fade-in-left     0.2s  cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 :root {
@@ -140,4 +144,19 @@
     body {
         @apply bg-background text-foreground;
     }
+}
+
+@layer base {
+  @keyframes collapsible-down {
+    from { height: 0; opacity: 0; }
+    to   { height: var(--radix-collapsible-content-height); opacity: 1; }
+  }
+  @keyframes collapsible-up {
+    from { height: var(--radix-collapsible-content-height); opacity: 1; }
+    to   { height: 0; opacity: 0; }
+  }
+  @keyframes fade-in-left {
+    from { opacity: 0; transform: translateX(-6px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
 }

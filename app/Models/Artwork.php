@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 class Artwork extends Model
 {
     protected $fillable = [
-        'title', 'artist', 'description', 'medium',
+        'user_id', 'title', 'artist', 'description', 'medium',
         'year', 'dimensions', 'price', 'category',
         'status', 'image',
     ];

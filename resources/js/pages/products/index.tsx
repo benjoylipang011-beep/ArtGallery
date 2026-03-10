@@ -1,7 +1,8 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
-import { Heart, Eye, Plus } from 'lucide-react';
+import { useState } from 'react';
+import { Heart, Eye, Plus, Trash2 } from 'lucide-react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Products', href: '/products' },
@@ -19,6 +20,12 @@ interface Artwork {
     status: string;
     image: string | null;
     created_at: string;
+    user_id: number;
+}
+
+interface Props {
+    artworks: Artwork[];
+    authUserId: number;
 }
 
 const gradients = [
@@ -32,8 +39,76 @@ const gradients = [
     'bg-gradient-to-br from-green-400 to-emerald-700',
 ];
 
-function ArtworkCard({ artwork, index }: { artwork: Artwork; index: number }) {
+// ── Delete confirmation modal ─────────────────────────────────────────────────
+function DeleteModal({ artwork, onClose }: { artwork: Artwork; onClose: () => void }) {
+    const [deleting, setDeleting] = useState(false);
+
+    const handleDelete = () => {
+        setDeleting(true);
+        router.delete(`/products/${artwork.id}`, {
+            onSuccess: onClose,
+            onError: () => setDeleting(false),
+        });
+    };
+
+    return (
+        <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl border border-sidebar-border/70 dark:border-sidebar-border w-full max-w-sm p-6 flex flex-col gap-4">
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center shrink-0">
+                        <Trash2 className="w-5 h-5 text-red-600 dark:text-red-400" />
+                    </div>
+                    <div>
+                        <h3 className="font-bold text-neutral-900 dark:text-white">Delete Artwork</h3>
+                        <p className="text-sm text-neutral-500 dark:text-neutral-400">This action cannot be undone.</p>
+                    </div>
+                </div>
+                <p className="text-sm text-neutral-600 dark:text-neutral-300">
+                    Are you sure you want to delete <span className="font-semibold">"{artwork.title}"</span>? It will be permanently removed from the gallery.
+                </p>
+                <div className="flex gap-3 mt-1">
+                    <button
+                        onClick={onClose}
+                        disabled={deleting}
+                        className="flex-1 rounded-lg border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 font-medium py-2.5 text-sm hover:bg-neutral-50 dark:hover:bg-neutral-800 transition disabled:opacity-50"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        onClick={handleDelete}
+                        disabled={deleting}
+                        className="flex-1 rounded-lg bg-red-600 hover:bg-red-700 text-white font-semibold py-2.5 text-sm transition flex items-center justify-center gap-2 disabled:opacity-60"
+                    >
+                        {deleting ? (
+                            <>
+                                <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                                </svg>
+                                Deleting...
+                            </>
+                        ) : (
+                            <>
+                                <Trash2 className="w-4 h-4" />
+                                Delete
+                            </>
+                        )}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// ── Artwork card ──────────────────────────────────────────────────────────────
+function ArtworkCard({ artwork, index, authUserId, onDeleteRequest }: {
+    artwork: Artwork;
+    index: number;
+    authUserId: number;
+    onDeleteRequest: (artwork: Artwork) => void;
+}) {
     const color = gradients[index % gradients.length];
+    const isOwner = artwork.user_id === authUserId;
 
     return (
         <div className="rounded-xl border border-sidebar-border/70 dark:border-sidebar-border bg-white dark:bg-neutral-900 overflow-hidden flex flex-col hover:shadow-lg transition-shadow cursor-pointer group">
@@ -51,23 +126,46 @@ function ArtworkCard({ artwork, index }: { artwork: Artwork; index: number }) {
                         </span>
                     </div>
                 )}
+
+                {/* Hover overlay */}
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100">
                     <button className="p-2 rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-sm transition-colors">
                         <Heart className="w-5 h-5 text-white" />
                     </button>
-                    <button className="p-2 rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-sm transition-colors">
+                    <Link
+                        href={`/products/${artwork.id}`}
+                        className="p-2 rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-sm transition-colors"
+                        title="View artwork"
+                    >
                         <Eye className="w-5 h-5 text-white" />
-                    </button>
+                    </Link>
+                    {isOwner && (
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onDeleteRequest(artwork); }}
+                            className="p-2 rounded-full bg-red-500/70 hover:bg-red-500/90 backdrop-blur-sm transition-colors"
+                            title="Delete artwork"
+                        >
+                            <Trash2 className="w-5 h-5 text-white" />
+                        </button>
+                    )}
                 </div>
+
                 {/* Status badge */}
                 <span className={`absolute top-2 left-2 text-xs font-medium px-2 py-0.5 rounded-full ${
                     artwork.status === 'available' ? 'bg-green-500/80 text-white' :
-                    artwork.status === 'sold' ? 'bg-red-500/80 text-white' :
-                    artwork.status === 'reserved' ? 'bg-yellow-500/80 text-white' :
+                    artwork.status === 'sold'      ? 'bg-red-500/80 text-white' :
+                    artwork.status === 'reserved'  ? 'bg-yellow-500/80 text-white' :
                     'bg-neutral-500/80 text-white'
                 }`}>
                     {artwork.status}
                 </span>
+
+                {/* Owner badge */}
+                {isOwner && (
+                    <span className="absolute top-2 right-2 text-xs font-medium px-2 py-0.5 rounded-full bg-amber-500/80 text-white">
+                        Yours
+                    </span>
+                )}
             </div>
 
             <div className="p-4 flex-1 flex flex-col">
@@ -89,11 +187,14 @@ function ArtworkCard({ artwork, index }: { artwork: Artwork; index: number }) {
     );
 }
 
-export default function ProductsIndex({ artworks }: { artworks: Artwork[] }) {
+// ── Page ──────────────────────────────────────────────────────────────────────
+export default function ProductsIndex({ artworks, authUserId }: Props) {
+    const [deleteTarget, setDeleteTarget] = useState<Artwork | null>(null);
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="All Artworks" />
-            <div className="flex h-full flex-1 flex-col gap-6 overflow-auto rounded-xl p-4">
+            <div className="flex h-full flex-1 flex-col gap-6 rounded-xl p-4">
 
                 {/* Header */}
                 <div>
@@ -144,12 +245,25 @@ export default function ProductsIndex({ artworks }: { artworks: Artwork[] }) {
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                         {artworks.map((artwork, index) => (
-                            <ArtworkCard key={artwork.id} artwork={artwork} index={index} />
+                            <ArtworkCard
+                                key={artwork.id}
+                                artwork={artwork}
+                                index={index}
+                                authUserId={authUserId}
+                                onDeleteRequest={setDeleteTarget}
+                            />
                         ))}
                     </div>
                 )}
-
             </div>
+
+            {/* Delete modal */}
+            {deleteTarget && (
+                <DeleteModal
+                    artwork={deleteTarget}
+                    onClose={() => setDeleteTarget(null)}
+                />
+            )}
         </AppLayout>
     );
 }

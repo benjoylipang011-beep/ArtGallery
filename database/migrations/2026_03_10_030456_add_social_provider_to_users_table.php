@@ -12,9 +12,15 @@ return new class extends Migration
             // Make password nullable so OAuth users don't need one
             $table->string('password')->nullable()->change();
 
-            $table->string('provider')->nullable()->after('remember_token');
-            $table->string('provider_id')->nullable()->after('provider');
-            $table->text('provider_token')->nullable()->after('provider_id');
+            if (!Schema::hasColumn('users', 'provider')) {
+                $table->string('provider')->nullable()->after('remember_token');
+            }
+            if (!Schema::hasColumn('users', 'provider_id')) {
+                $table->string('provider_id')->nullable()->after('provider');
+            }
+            if (!Schema::hasColumn('users', 'provider_token')) {
+                $table->text('provider_token')->nullable()->after('provider_id');
+            }
         });
     }
 

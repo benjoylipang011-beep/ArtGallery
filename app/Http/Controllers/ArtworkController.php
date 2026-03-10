@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Artwork;
+use App\Models\CartItem;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
 class ArtworkController extends Controller
@@ -11,7 +13,11 @@ class ArtworkController extends Controller
     public function index()
     {
         $artworks = Artwork::latest()->get();
-        return Inertia::render('products/index', compact('artworks'));
+
+        return Inertia::render('products/index', [
+            'artworks'   => $artworks,
+            'authUserId' => Auth::id(),
+        ]);
     }
 
     public function create()
@@ -38,8 +44,39 @@ class ArtworkController extends Controller
             $validated['image'] = $request->file('image')->store('artworks', 'public');
         }
 
+        $validated['user_id'] = Auth::id();
+
         Artwork::create($validated);
 
         return redirect('/products')->with('success', 'Artwork added!');
+    }
+
+    public function show(Artwork $artwork)
+    {
+        $inCart = CartItem::where('user_id', Auth::id())
+            ->where('artwork_id', $artwork->id)
+            ->exists();
+
+        return Inertia::render('products/show', [
+            'artwork'    => array_merge($artwork->toArray(), ['user_id' => (int) $artwork->user_id]),
+            'authUserId' => (int) Auth::id(),
+            'inCart'     => $inCart,
+        ]);
+    }
+
+    public function destroy(Artwork $artwork)
+    {
+        if ($artwork->user_id !== Auth::id()) {
+            abort(403, 'You can only delete your own artworks.');
+        }
+
+        // Delete the image file from storage if it exists
+        if ($artwork->image) {
+            \Storage::disk('public')->delete($artwork->image);
+        }
+
+        $artwork->delete();
+
+        return redirect('/products')->with('success', 'Artwork deleted.');
     }
 }
