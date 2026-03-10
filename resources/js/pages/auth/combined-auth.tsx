@@ -480,11 +480,11 @@ function OtpEmailForm({ inputId, darkMode = false, onSuccess, onBack }: {
     };
 
     const inputStyle = darkMode
-        ? 'h-11 w-full rounded-lg border border-white/30 bg-white/10 text-white placeholder:text-teal-200 focus:border-white focus:outline-none focus:ring-0'
+        ? 'h-11 w-full rounded-lg border border-white/30 bg-white/10 text-white placeholder:text-teal-200 focus:border-white focus:outline-none focus:ring-0 pl-4'
         : inputCls;
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 px-1">
             <div>
                 <input
                     id={inputId}
