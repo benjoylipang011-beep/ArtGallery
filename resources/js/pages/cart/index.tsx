@@ -68,7 +68,7 @@ export default function CartIndex({ cartItems, total }: Props) {
                         {/* Cart items list */}
                         <div className="md:col-span-2 flex flex-col gap-3">
                             {cartItems.map((item) => (
-                                <div key={item.id} className="flex gap-4 p-4 rounded-xl border border-sidebar-border/70 dark:border-sidebar-border bg-white dark:bg-neutral-900">
+                                <div key={item.id} className="flex gap-4 p-4 rounded-xl border-[3px] border-neutral-300 dark:border-neutral-800 bg-white dark:bg-neutral-900">
                                     {/* Image */}
                                     <div className="w-20 h-20 rounded-lg overflow-hidden shrink-0 bg-neutral-100 dark:bg-neutral-800">
                                         {item.artwork.image ? (
@@ -105,7 +105,7 @@ export default function CartIndex({ cartItems, total }: Props) {
 
                         {/* Order summary */}
                         <div className="md:col-span-1">
-                            <div className="rounded-xl border border-sidebar-border/70 dark:border-sidebar-border bg-white dark:bg-neutral-900 p-5 sticky top-4">
+                            <div className="rounded-xl border-[3px] border-neutral-300 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-5 sticky top-4">
                                 <h2 className="font-semibold text-neutral-900 dark:text-white mb-4">Order Summary</h2>
 
                                 <div className="flex flex-col gap-2 text-sm">

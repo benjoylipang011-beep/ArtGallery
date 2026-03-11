@@ -53,7 +53,7 @@ function DeleteModal({ artwork, onClose }: { artwork: Artwork; onClose: () => vo
 
     return (
         <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl border border-sidebar-border/70 dark:border-sidebar-border w-full max-w-sm p-6 flex flex-col gap-4">
+            <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl border-[3px] border-neutral-300 dark:border-neutral-800 w-full max-w-sm p-6 flex flex-col gap-4">
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center shrink-0">
                         <Trash2 className="w-5 h-5 text-red-600 dark:text-red-400" />
@@ -111,7 +111,7 @@ function ArtworkCard({ artwork, index, authUserId, onDeleteRequest }: {
     const isOwner = artwork.user_id === authUserId;
 
     return (
-        <div className="rounded-xl border border-sidebar-border/70 dark:border-sidebar-border bg-white dark:bg-neutral-900 overflow-hidden flex flex-col hover:shadow-lg transition-shadow cursor-pointer group">
+        <div className="rounded-xl border-[3px] border-neutral-300 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden flex flex-col hover:shadow-lg transition-shadow cursor-pointer group">
             <div className="relative">
                 {artwork.image ? (
                     <img

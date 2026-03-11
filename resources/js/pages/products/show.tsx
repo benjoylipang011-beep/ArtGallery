@@ -2,7 +2,7 @@ import { Head, Link, router, usePage } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 import { useState } from 'react';
-import { ArrowLeft, Trash2, Calendar, Ruler, Tag, Palette, DollarSign, User, FileText, ShoppingCart, Zap } from 'lucide-react';
+import { ArrowLeft, Trash2, Calendar, Ruler, Tag, Palette, User, FileText, ShoppingCart, Zap } from 'lucide-react';
 
 interface Artwork {
     id: number;
@@ -110,7 +110,7 @@ export default function ShowArtwork({ artwork, authUserId, inCart }: Props) {
 
                     {/* Left — image */}
                     <div className="md:col-span-2">
-                        <div className="rounded-2xl overflow-hidden border border-sidebar-border/70 dark:border-sidebar-border shadow-sm">
+                        <div className="rounded-2xl overflow-hidden border-[3px] border-neutral-300 dark:border-neutral-800 shadow-sm">
                             {artwork.image ? (
                                 <img
                                     src={`/storage/${artwork.image}`}
@@ -156,9 +156,9 @@ export default function ShowArtwork({ artwork, authUserId, inCart }: Props) {
                         {/* Price */}
                         {artwork.price && (
                             <div className="inline-flex items-center gap-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/40 rounded-xl px-5 py-3 w-fit">
-                                <DollarSign className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                                <span className="text-xl font-bold text-amber-600 dark:text-amber-400">₱</span>
                                 <span className="text-2xl font-bold text-amber-600 dark:text-amber-400">
-                                    ₱{Number(artwork.price).toLocaleString()}
+                                    {Number(artwork.price).toLocaleString()}
                                 </span>
                             </div>
                         )}
@@ -196,7 +196,7 @@ export default function ShowArtwork({ artwork, authUserId, inCart }: Props) {
 
                         {/* Description */}
                         {artwork.description && (
-                            <div className="rounded-xl border border-sidebar-border/70 dark:border-sidebar-border bg-white dark:bg-neutral-900 p-5">
+                            <div className="rounded-xl border-[3px] border-neutral-300 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-5">
                                 <h2 className="text-xs font-semibold uppercase tracking-widest text-neutral-400 mb-2 flex items-center gap-1.5">
                                     <FileText className="w-3.5 h-3.5" /> Description
                                 </h2>
@@ -207,7 +207,7 @@ export default function ShowArtwork({ artwork, authUserId, inCart }: Props) {
                         )}
 
                         {/* Details grid */}
-                        <div className="rounded-xl border border-sidebar-border/70 dark:border-sidebar-border bg-white dark:bg-neutral-900 p-5">
+                        <div className="rounded-xl border-[3px] border-neutral-300 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-5">
                             <h2 className="text-xs font-semibold uppercase tracking-widest text-neutral-400 mb-4">Artwork Details</h2>
                             <div className="grid grid-cols-2 gap-4">
                                 {artwork.medium && (
@@ -268,7 +268,7 @@ export default function ShowArtwork({ artwork, authUserId, inCart }: Props) {
             {/* ── Delete confirmation modal ── */}
             {showDeleteModal && (
                 <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-                    <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl border border-sidebar-border/70 dark:border-sidebar-border w-full max-w-sm p-6 flex flex-col gap-4">
+                    <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl border-[3px] border-neutral-300 dark:border-neutral-800 w-full max-w-sm p-6 flex flex-col gap-4">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center shrink-0">
                                 <Trash2 className="w-5 h-5 text-red-600 dark:text-red-400" />

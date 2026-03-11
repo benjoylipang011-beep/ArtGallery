@@ -62,7 +62,7 @@ export default function BuyNow({ artwork }: Props) {
                     <div className="md:col-span-2 flex flex-col gap-5">
 
                         {/* Delivery info */}
-                        <div className="rounded-xl border border-sidebar-border/70 dark:border-sidebar-border bg-white dark:bg-neutral-900 p-5">
+                        <div className="rounded-xl border-[3px] border-neutral-300 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-5">
                             <h2 className="font-semibold text-neutral-900 dark:text-white mb-4 flex items-center gap-2">
                                 <Truck className="w-4 h-4 text-amber-500" />
                                 Delivery Information
@@ -102,7 +102,7 @@ export default function BuyNow({ artwork }: Props) {
                         </div>
 
                         {/* Payment method */}
-                        <div className="rounded-xl border border-sidebar-border/70 dark:border-sidebar-border bg-white dark:bg-neutral-900 p-5">
+                        <div className="rounded-xl border-[3px] border-neutral-300 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-5">
                             <h2 className="font-semibold text-neutral-900 dark:text-white mb-4 flex items-center gap-2">
                                 <CreditCard className="w-4 h-4 text-amber-500" />
                                 Payment Method
@@ -140,7 +140,7 @@ export default function BuyNow({ artwork }: Props) {
 
                     {/* Artwork summary */}
                     <div className="md:col-span-1">
-                        <div className="rounded-xl border border-sidebar-border/70 dark:border-sidebar-border bg-white dark:bg-neutral-900 p-5 sticky top-4">
+                        <div className="rounded-xl border-[3px] border-neutral-300 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-5 sticky top-4">
                             <h2 className="font-semibold text-neutral-900 dark:text-white mb-4">Artwork</h2>
 
                             <div className="rounded-lg overflow-hidden mb-3">

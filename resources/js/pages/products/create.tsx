@@ -70,7 +70,8 @@ export default function CreateProduct() {
 
                     <div className="md:col-span-2 flex flex-col gap-5">
 
-                        <div className="rounded-xl border border-sidebar-border/70 dark:border-sidebar-border bg-white dark:bg-neutral-900 p-5">
+                        {/* Artwork Info Card */}
+                        <div className="rounded-xl border-[3px] border-neutral-300 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-5">
                             <h2 className="text-sm font-semibold uppercase tracking-widest text-neutral-400 mb-4">Artwork Info</h2>
                             <div className="flex flex-col gap-4">
                                 <div>
@@ -108,7 +109,8 @@ export default function CreateProduct() {
                             </div>
                         </div>
 
-                        <div className="rounded-xl border border-sidebar-border/70 dark:border-sidebar-border bg-white dark:bg-neutral-900 p-5">
+                        {/* Details Card */}
+                        <div className="rounded-xl border-[3px] border-neutral-300 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-5">
                             <h2 className="text-sm font-semibold uppercase tracking-widest text-neutral-400 mb-4">Details</h2>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
@@ -122,6 +124,12 @@ export default function CreateProduct() {
                                         <option>Oil on Canvas</option>
                                         <option>Watercolor</option>
                                         <option>Acrylic</option>
+                                        <option>Charcoal</option>
+                                        <option>Charcoal Pencil</option>
+                                        <option>Graphite Pencil</option>
+                                        <option>Colored Pencil</option>
+                                        <option>Ink</option>
+                                        <option>Pastel</option>
                                         <option>Digital</option>
                                         <option>Mixed Media</option>
                                         <option>Sculpture</option>
@@ -173,6 +181,7 @@ export default function CreateProduct() {
                                         <option>Portrait</option>
                                         <option>Landscape</option>
                                         <option>Still Life</option>
+                                        <option>Drawing</option>
                                         <option>Contemporary</option>
                                         <option>Traditional</option>
                                         <option>Sculpture</option>
@@ -196,7 +205,9 @@ export default function CreateProduct() {
                     </div>
 
                     <div className="flex flex-col gap-5">
-                        <div className="rounded-xl border border-sidebar-border/70 dark:border-sidebar-border bg-white dark:bg-neutral-900 p-5">
+
+                        {/* Image Upload Card */}
+                        <div className="rounded-xl border-[3px] border-neutral-300 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-5">
                             <h2 className="text-sm font-semibold uppercase tracking-widest text-neutral-400 mb-4">Artwork Image</h2>
 
                             {preview ? (
@@ -215,7 +226,7 @@ export default function CreateProduct() {
                                     className={`flex flex-col items-center justify-center gap-3 border-2 border-dashed rounded-xl p-8 cursor-pointer transition ${
                                         dragOver
                                             ? 'border-neutral-900 bg-neutral-50 dark:border-white dark:bg-neutral-800'
-                                            : 'border-neutral-200 dark:border-neutral-700 hover:border-neutral-400 dark:hover:border-neutral-500'
+                                            : 'border-neutral-300 dark:border-neutral-700 hover:border-neutral-400 dark:hover:border-neutral-500'
                                     }`}
                                     onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
                                     onDragLeave={() => setDragOver(false)}
@@ -240,6 +251,7 @@ export default function CreateProduct() {
                             )}
                         </div>
 
+                        {/* Action Buttons */}
                         <div className="flex flex-col gap-2">
                             <button
                                 type="button"

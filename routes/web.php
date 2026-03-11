@@ -5,6 +5,7 @@ use Laravel\Fortify\Features;
 use App\Http\Controllers\ArtworkController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Auth\PasswordResetOtpController;
 use App\Http\Controllers\Auth\SocialAuthController;
 
@@ -36,6 +37,10 @@ Route::middleware('guest')->group(function () {
 Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    // ── Profile ───────────────────────────────────────────────────────────────
+    Route::get('/profile',  [ProfileController::class, 'show'])->name('profile.show');
+    Route::post('/profile', [ProfileController::class, 'update'])->name('profile.update');
 
     Route::post('artworks/{artwork}/save', [DashboardController::class, 'toggleSave'])->name('artworks.save');
     Route::delete('artworks/{artwork}/save', [DashboardController::class, 'removeSaved'])->name('artworks.unsave');

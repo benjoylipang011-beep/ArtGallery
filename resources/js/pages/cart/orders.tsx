@@ -67,7 +67,7 @@ export default function OrdersPage({ orders }: Props) {
                 ) : (
                     <div className="flex flex-col gap-4">
                         {orders.map((order) => (
-                            <div key={order.id} className="rounded-xl border border-sidebar-border/70 dark:border-sidebar-border bg-white dark:bg-neutral-900 overflow-hidden">
+                            <div key={order.id} className="rounded-xl border-[3px] border-neutral-300 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden">
 
                                 {/* Order header */}
                                 <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">

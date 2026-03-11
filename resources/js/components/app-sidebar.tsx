@@ -1,5 +1,5 @@
 import { Link, usePage, router } from '@inertiajs/react';
-import { BookOpen, Folder, LayoutGrid, Package, Image, PlusCircle, Tag, Archive, ChevronRight, Bell, X, CheckCheck, ShoppingCart, ClipboardList } from 'lucide-react';
+import { BookOpen, Folder, LayoutGrid, Package, Image, PlusCircle, Tag, Archive, ChevronRight, Bell, X, CheckCheck, ShoppingCart, ClipboardList, FileBarChart } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { NavFooter } from '@/components/nav-footer';
 import { NavUser } from '@/components/nav-user';
@@ -399,6 +399,16 @@ export function AppSidebar() {
                                 <Link href="/orders">
                                     <ClipboardList className="shrink-0 w-4 h-4" />
                                     <span>My Orders</span>
+                                </Link>
+                            </SidebarMenuButton>
+                        </SidebarMenuItem>
+
+                        {/* Reports */}
+                        <SidebarMenuItem>
+                            <SidebarMenuButton asChild tooltip="Reports" isActive={url === '/reports'}>
+                                <Link href="/reports">
+                                    <FileBarChart className="shrink-0 w-4 h-4" />
+                                    <span>Reports</span>
                                 </Link>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
