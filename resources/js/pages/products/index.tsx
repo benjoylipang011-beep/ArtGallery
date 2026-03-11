@@ -190,6 +190,25 @@ function ArtworkCard({ artwork, index, authUserId, onDeleteRequest }: {
 // ── Page ──────────────────────────────────────────────────────────────────────
 export default function ProductsIndex({ artworks, authUserId }: Props) {
     const [deleteTarget, setDeleteTarget] = useState<Artwork | null>(null);
+    const [search, setSearch] = useState('');
+    const [selectedCategory, setSelectedCategory] = useState('All Categories');
+
+    const categories = ['All Categories', ...Array.from(
+        new Set(artworks.map((a) => a.category).filter(Boolean) as string[])
+    ).sort()];
+
+    const filtered = artworks.filter((a) => {
+        const q = search.toLowerCase();
+        const matchesSearch =
+            !q ||
+            a.title.toLowerCase().includes(q) ||
+            a.artist.toLowerCase().includes(q) ||
+            (a.medium ?? '').toLowerCase().includes(q);
+        const matchesCategory =
+            selectedCategory === 'All Categories' ||
+            (a.category ?? '').toLowerCase() === selectedCategory.toLowerCase();
+        return matchesSearch && matchesCategory;
+    });
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -203,12 +222,14 @@ export default function ProductsIndex({ artworks, authUserId }: Props) {
                             All Artworks
                         </h1>
                         <div className="flex items-center gap-2">
-                            <select className="px-3 py-2 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white">
-                                <option>All Categories</option>
-                                <option>Painting</option>
-                                <option>Sculpture</option>
-                                <option>Digital</option>
-                                <option>Mixed Media</option>
+                            <select
+                                value={selectedCategory}
+                                onChange={(e) => setSelectedCategory(e.target.value)}
+                                className="px-3 py-2 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white"
+                            >
+                                {categories.map((cat) => (
+                                    <option key={cat} value={cat}>{cat}</option>
+                                ))}
                             </select>
                             <Link
                                 href="/products/create"
@@ -220,20 +241,45 @@ export default function ProductsIndex({ artworks, authUserId }: Props) {
                         </div>
                     </div>
                     <p className="text-sm text-neutral-600 dark:text-neutral-400">
-                        Showing <span className="font-semibold">{artworks.length}</span> artworks
+                        Showing <span className="font-semibold">{filtered.length}</span>
+                        {filtered.length !== artworks.length && (
+                            <span> of <span className="font-semibold">{artworks.length}</span></span>
+                        )} artworks
+                        {(search || selectedCategory !== 'All Categories') && (
+                            <button
+                                onClick={() => { setSearch(''); setSelectedCategory('All Categories'); }}
+                                className="ml-2 text-xs text-amber-600 hover:text-amber-700 underline underline-offset-2"
+                            >
+                                Clear filters
+                            </button>
+                        )}
                     </p>
                 </div>
 
                 {/* Search Bar */}
-                <div className="flex gap-3">
-                    <input
-                        type="text"
-                        placeholder="Search artworks by title, artist, or medium..."
-                        className="flex-1 px-4 py-2 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white placeholder-neutral-500 dark:placeholder-neutral-400"
-                    />
-                    <button className="px-4 py-2 text-sm font-medium rounded-lg bg-amber-600 hover:bg-amber-700 text-white transition-colors">
-                        Search
-                    </button>
+                <div className="flex items-center gap-2">
+                    <div className="relative group">
+                        <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none z-10 transition-colors group-focus-within:text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
+                        </svg>
+                        <input
+                            type="text"
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            placeholder="Search artworks..."
+                            className="pl-9 pr-8 py-2 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white placeholder-neutral-500 dark:placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-500 transition-[width,border-color,box-shadow] duration-500 ease-in-out w-44 focus:w-96"
+                        />
+                        {search && (
+                            <button
+                                onClick={() => setSearch('')}
+                                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 transition-colors"
+                            >
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        )}
+                    </div>
                 </div>
 
                 {/* Artworks Grid */}
@@ -242,9 +288,20 @@ export default function ProductsIndex({ artworks, authUserId }: Props) {
                         <p className="text-lg font-medium">No artworks yet</p>
                         <p className="text-sm mt-1">Click "Add Artwork" to add your first piece.</p>
                     </div>
+                ) : filtered.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-20 text-neutral-400">
+                        <p className="text-lg font-medium">No results found</p>
+                        <p className="text-sm mt-1">Try a different search term or category.</p>
+                        <button
+                            onClick={() => { setSearch(''); setSelectedCategory('All Categories'); }}
+                            className="mt-3 text-sm text-amber-600 hover:text-amber-700 underline underline-offset-2"
+                        >
+                            Clear filters
+                        </button>
+                    </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                        {artworks.map((artwork, index) => (
+                        {filtered.map((artwork, index) => (
                             <ArtworkCard
                                 key={artwork.id}
                                 artwork={artwork}
