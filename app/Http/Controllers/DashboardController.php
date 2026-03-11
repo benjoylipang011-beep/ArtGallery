@@ -18,12 +18,18 @@ class DashboardController extends Controller
     {
         $user = $request->user();
 
-        $savedIds = [];
+        // Load saved artworks with the pivot created_at (saved date)
+        $savedRows = [];
         if (Schema::hasTable('saved_artworks')) {
-            $savedIds = SavedArtwork::where('user_id', $user->id)
-                ->pluck('artwork_id')
-                ->toArray();
+            $savedRows = SavedArtwork::where('user_id', $user->id)
+                ->orderByDesc('created_at')
+                ->get(['artwork_id', 'created_at']);
         }
+
+        $savedIds = $savedRows->pluck('artwork_id')->toArray();
+
+        // Build a map of artwork_id => saved_at for easy lookup
+        $savedAtMap = $savedRows->keyBy('artwork_id')->map(fn($r) => $r->created_at);
 
         $artworks = Artwork::orderByDesc('created_at')
             ->get()
@@ -42,17 +48,31 @@ class DashboardController extends Controller
 
         $savedArtworks = collect();
         if (!empty($savedIds)) {
-            $savedArtworks = Artwork::whereIn('id', $savedIds)
-                ->orderByDesc('created_at')
+            // Preserve the saved order (most recently saved first)
+            $artworkMap = Artwork::whereIn('id', $savedIds)
                 ->get()
-                ->map(fn($a) => [
-                    'id'     => $a->id,
-                    'title'  => $a->title ?? '',
-                    'artist' => $a->artist ?? '',
-                    'medium' => $a->medium ?? '',
-                    'price'  => (float) ($a->price ?? 0),
-                    'image'  => $a->image ? asset('storage/' . $a->image) : null,
-                ]);
+                ->keyBy('id');
+
+            $savedArtworks = $savedRows->map(function ($row) use ($artworkMap) {
+                $a = $artworkMap->get($row->artwork_id);
+                if (!$a) return null;
+
+                $savedAt = $row->created_at;
+
+                return [
+                    'id'       => $a->id,
+                    'title'    => $a->title ?? '',
+                    'artist'   => $a->artist ?? '',
+                    'medium'   => $a->medium ?? '',
+                    'price'    => (float) ($a->price ?? 0),
+                    'image'    => $a->image ? asset('storage/' . $a->image) : null,
+                    // Day + date when user saved this artwork
+                    'saved_at'           => $savedAt ? $savedAt->setTimezone('Asia/Manila')->toIso8601String() : null,
+                    'saved_at_formatted' => $savedAt ? $savedAt->setTimezone('Asia/Manila')->format('l, F j, Y') : null,
+                    'saved_at_time'      => $savedAt ? $savedAt->setTimezone('Asia/Manila')->format('g:i A') : null,
+                    'saved_at_relative'  => $savedAt ? $savedAt->setTimezone('Asia/Manila')->diffForHumans() : null,
+                ];
+            })->filter()->values();
         }
 
         // ── User-specific analytics ──────────────────────────────────────────
@@ -126,26 +146,25 @@ class DashboardController extends Controller
                 'count' => (int) $r->count,
             ]);
 
-        // ✅ 'dashboard' matches resources/js/pages/dashboard.tsx (lowercase)
         return Inertia::render('dashboard', [
             'artworks'      => $artworks->values(),
             'savedArtworks' => $savedArtworks->values(),
             'stats'         => [
-                'totalArtworks'  => Artwork::count(),
-                'savedCount'     => count($savedIds),
-                'liveExhibitions'=> 2,
-                'myArtworks'     => $myTotalArtworks,
-                'myOrders'       => $myTotalOrders,
-                'myRevenue'      => (float) $myTotalRevenue,
-                'myCartCount'    => $myCartCount,
-                'myPendingOrders'=> $myPendingOrders,
+                'totalArtworks'   => Artwork::count(),
+                'savedCount'      => count($savedIds),
+                'liveExhibitions' => 2,
+                'myArtworks'      => $myTotalArtworks,
+                'myOrders'        => $myTotalOrders,
+                'myRevenue'       => (float) $myTotalRevenue,
+                'myCartCount'     => $myCartCount,
+                'myPendingOrders' => $myPendingOrders,
             ],
             'analytics' => [
-                'byCategory'     => $byCategory->values(),
-                'byStatus'       => $byStatus->values(),
-                'byMedium'       => $byMedium->values(),
-                'topArtworks'    => $topArtworks->values(),
-                'monthlyArtworks'=> $monthlyArtworks->values(),
+                'byCategory'      => $byCategory->values(),
+                'byStatus'        => $byStatus->values(),
+                'byMedium'        => $byMedium->values(),
+                'topArtworks'     => $topArtworks->values(),
+                'monthlyArtworks' => $monthlyArtworks->values(),
             ],
         ]);
     }
@@ -169,9 +188,32 @@ class DashboardController extends Controller
             $saved = true;
         }
 
+        $savedAt = null;
+        $savedAtFormatted = null;
+        $savedAtTime = null;
+        $savedAtRelative = null;
+
+        if ($saved) {
+            $row = SavedArtwork::where('user_id', $user->id)
+                ->where('artwork_id', $artwork->id)
+                ->first(['created_at']);
+
+            if ($row && $row->created_at) {
+                $dt               = $row->created_at->setTimezone('Asia/Manila');
+                $savedAt          = $dt->toIso8601String();
+                $savedAtFormatted = $dt->format('l, F j, Y');
+                $savedAtTime      = $dt->format('g:i A');
+                $savedAtRelative  = $dt->diffForHumans();
+            }
+        }
+
         return response()->json([
-            'saved'      => $saved,
-            'savedCount' => SavedArtwork::where('user_id', $user->id)->count(),
+            'saved'              => $saved,
+            'savedCount'         => SavedArtwork::where('user_id', $user->id)->count(),
+            'saved_at'           => $savedAt,
+            'saved_at_formatted' => $savedAtFormatted,
+            'saved_at_time'      => $savedAtTime,
+            'saved_at_relative'  => $savedAtRelative,
         ]);
     }
 

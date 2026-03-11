@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Artwork;
 use App\Models\CartItem;
+use App\Models\SavedArtwork;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -14,9 +15,14 @@ class ArtworkController extends Controller
     {
         $artworks = Artwork::latest()->get();
 
+        $savedIds = Auth::check()
+            ? SavedArtwork::where('user_id', Auth::id())->pluck('artwork_id')->toArray()
+            : [];
+
         return Inertia::render('products/index', [
             'artworks'   => $artworks,
             'authUserId' => Auth::id(),
+            'savedIds'   => $savedIds,
         ]);
     }
 
@@ -57,10 +63,20 @@ class ArtworkController extends Controller
             ->where('artwork_id', $artwork->id)
             ->exists();
 
+        $isSaved = SavedArtwork::where('user_id', Auth::id())
+            ->where('artwork_id', $artwork->id)
+            ->exists();
+
+        $savedAt = SavedArtwork::where('user_id', Auth::id())
+            ->where('artwork_id', $artwork->id)
+            ->value('created_at');
+
         return Inertia::render('products/show', [
             'artwork'    => array_merge($artwork->toArray(), ['user_id' => (int) $artwork->user_id]),
             'authUserId' => (int) Auth::id(),
             'inCart'     => $inCart,
+            'isSaved'    => $isSaved,
+            'savedAt'    => $savedAt ? $savedAt->toIso8601String() : null,
         ]);
     }
 

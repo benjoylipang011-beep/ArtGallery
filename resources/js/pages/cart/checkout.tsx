@@ -22,23 +22,36 @@ interface CartItem {
     artwork: Artwork;
 }
 
+interface UserProfile {
+    name?: string | null;
+    phone?: string | null;
+    location?: string | null;
+}
+
 interface Props {
     cartItems: CartItem[];
     total: number;
+    userProfile?: UserProfile;
+    selectedIds?: number[];
 }
 
-export default function Checkout({ cartItems, total }: Props) {
+export default function Checkout({ cartItems, total, userProfile, selectedIds }: Props) {
     const [form, setForm] = useState({
-        full_name: '',
-        phone: '',
-        address: '',
+        full_name: userProfile?.name     ?? '',
+        phone:     userProfile?.phone    ?? '',
+        address:   userProfile?.location ?? '',
         payment_method: 'cash_on_delivery',
     });
     const [submitting, setSubmitting] = useState(false);
 
     const handleSubmit = () => {
         setSubmitting(true);
-        router.post('/cart/order', form, {
+        const payload: any = { ...form };
+        // Pass selected_ids so server only processes the chosen items
+        if (selectedIds && selectedIds.length > 0) {
+            payload.selected_ids = selectedIds;
+        }
+        router.post('/cart/order', payload, {
             onError: () => setSubmitting(false),
         });
     };
@@ -69,7 +82,10 @@ export default function Checkout({ cartItems, total }: Props) {
                             </h2>
                             <div className="flex flex-col gap-4">
                                 <div>
-                                    <label className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">Full Name</label>
+                                    <label className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider flex items-center gap-2">
+                                        Full Name
+                                        {userProfile?.name && <span className="normal-case text-xs font-normal text-amber-500 bg-amber-50 dark:bg-amber-900/20 px-1.5 py-0.5 rounded-full">auto-filled</span>}
+                                    </label>
                                     <input
                                         type="text"
                                         value={form.full_name}
@@ -79,7 +95,10 @@ export default function Checkout({ cartItems, total }: Props) {
                                     />
                                 </div>
                                 <div>
-                                    <label className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">Phone Number</label>
+                                    <label className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider flex items-center gap-2">
+                                        Phone Number
+                                        {userProfile?.phone && <span className="normal-case text-xs font-normal text-amber-500 bg-amber-50 dark:bg-amber-900/20 px-1.5 py-0.5 rounded-full">auto-filled</span>}
+                                    </label>
                                     <input
                                         type="text"
                                         value={form.phone}
@@ -89,7 +108,10 @@ export default function Checkout({ cartItems, total }: Props) {
                                     />
                                 </div>
                                 <div>
-                                    <label className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">Delivery Address</label>
+                                    <label className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider flex items-center gap-2">
+                                        Delivery Address
+                                        {userProfile?.location && <span className="normal-case text-xs font-normal text-amber-500 bg-amber-50 dark:bg-amber-900/20 px-1.5 py-0.5 rounded-full">auto-filled from profile</span>}
+                                    </label>
                                     <textarea
                                         value={form.address}
                                         onChange={e => setForm(f => ({ ...f, address: e.target.value }))}

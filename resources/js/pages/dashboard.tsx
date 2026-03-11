@@ -36,6 +36,10 @@ interface SavedArtwork {
   medium: string;
   price: number;
   image: string | null;
+  saved_at: string | null;
+  saved_at_formatted: string | null;
+  saved_at_time: string | null;
+  saved_at_relative: string | null;
 }
 interface Stats {
   totalArtworks: number;
@@ -423,9 +427,19 @@ function SavedRow({ artwork, onRemove }: { artwork: SavedArtwork; onRemove: (id:
       )}
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-neutral-800 dark:text-neutral-200 truncate">{artwork.title}</p>
-        <p className="text-xs text-neutral-400">
-          {artwork.artist} · {artwork.medium}
-        </p>
+        <p className="text-xs text-neutral-400">{artwork.artist} · {artwork.medium}</p>
+        {artwork.saved_at_formatted ? (
+          <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-0.5 flex items-center gap-1">
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-rose-400 shrink-0" />
+            <span>{artwork.saved_at_formatted}</span>
+            {artwork.saved_at_time && (
+              <span className="text-neutral-300 dark:text-neutral-600">· {artwork.saved_at_time}</span>
+            )}
+            {artwork.saved_at_relative && (
+              <span className="text-neutral-300 dark:text-neutral-600 italic">({artwork.saved_at_relative})</span>
+            )}
+          </p>
+        ) : null}
       </div>
       <div className="text-right shrink-0">
         <p className="text-sm font-bold text-amber-500">{formatPrice(artwork.price)}</p>
@@ -440,13 +454,69 @@ function SavedRow({ artwork, onRemove }: { artwork: SavedArtwork; onRemove: (id:
   );
 }
 
+// ── View All Saved Modal ───────────────────────────────────────────────────────
+function SavedAllModal({ artworks, onRemove, onClose }: {
+  artworks: SavedArtwork[];
+  onRemove: (id: number) => void;
+  onClose: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+      <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl border-[3px] border-neutral-300 dark:border-neutral-800 w-full max-w-md flex flex-col max-h-[80vh]">
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100 dark:border-neutral-800 shrink-0">
+          <div className="flex items-center gap-2">
+            <Heart className="w-4 h-4 fill-rose-500 text-rose-500" />
+            <h2 className="font-bold text-neutral-900 dark:text-white text-base">All Saved Artworks</h2>
+            <span className="text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded-full font-semibold">
+              {artworks.length}
+            </span>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        {/* List */}
+        <div className="overflow-y-auto flex-1 px-5">
+          {artworks.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-32 gap-2">
+              <Heart className="w-8 h-8 text-neutral-200 dark:text-neutral-700" />
+              <p className="text-xs text-neutral-400 text-center">No saved artworks yet.</p>
+            </div>
+          ) : (
+            artworks.map((a) => (
+              <SavedRow key={a.id} artwork={a} onRemove={(id) => { onRemove(id); }} />
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Dashboard() {
   const page = usePage();
   const rawProps = page.props as Record<string, unknown>;
 
   const initArtworks: Artwork[] = Array.isArray(rawProps.artworks) ? (rawProps.artworks as Artwork[]) : [];
   const initSaved: SavedArtwork[] = Array.isArray(rawProps.savedArtworks)
-    ? (rawProps.savedArtworks as SavedArtwork[])
+    ? (rawProps.savedArtworks as any[]).map((a) => ({
+        id: a.id,
+        title: a.title ?? '',
+        artist: a.artist ?? '',
+        medium: a.medium ?? '',
+        price: Number(a.price ?? 0),
+        image: a.image ?? null,
+        saved_at: a.saved_at ?? null,
+        saved_at_formatted: a.saved_at_formatted ?? null,
+        saved_at_time: a.saved_at_time ?? null,
+        saved_at_relative: a.saved_at_relative ?? null,
+      }))
     : [];
   const rawStats = (rawProps.stats && typeof rawProps.stats === 'object') ? (rawProps.stats as Partial<Stats>) : {};
   const analytics = (rawProps.analytics && typeof rawProps.analytics === 'object')
@@ -467,6 +537,7 @@ export default function Dashboard() {
   const [artworks, setArtworks] = useState<Artwork[]>(initArtworks);
   const [savedArtworks, setSaved] = useState<SavedArtwork[]>(initSaved);
   const [stats, setStats] = useState<Stats>(initStats);
+  const [showSavedModal, setShowSavedModal] = useState(false);
 
   const handleToggleSave = useCallback(
     async (artworkId: number) => {
@@ -478,6 +549,16 @@ export default function Dashboard() {
         setSaved((prev) => prev.filter((a) => a.id !== artworkId));
         setStats((prev) => ({ ...prev, savedCount: Math.max(0, prev.savedCount - 1) }));
       } else {
+        const nowIso = new Date().toISOString();
+        const nowDate = new Date();
+        const dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+        const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+        const formatted = `${dayNames[nowDate.getDay()]}, ${monthNames[nowDate.getMonth()]} ${nowDate.getDate()}, ${nowDate.getFullYear()}`;
+        const hours = nowDate.getHours();
+        const mins = nowDate.getMinutes().toString().padStart(2,'0');
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+        const h12 = hours % 12 || 12;
+        const timeStr = `${h12}:${mins} ${ampm}`;
         setSaved((prev) => [
           {
             id: target.id,
@@ -486,6 +567,10 @@ export default function Dashboard() {
             medium: target.medium,
             price: target.price,
             image: target.image,
+            saved_at: nowIso,
+            saved_at_formatted: formatted,
+            saved_at_time: timeStr,
+            saved_at_relative: 'just now',
           },
           ...prev,
         ]);
@@ -498,7 +583,7 @@ export default function Dashboard() {
         setArtworks((prev) => prev.map((a) => (a.id === artworkId ? { ...a, saved: wasSaved } : a)));
         setSaved(wasSaved
           ? (prev) => [
-              { id: target.id, title: target.title, artist: target.artist, medium: target.medium, price: target.price, image: target.image },
+              { id: target.id, title: target.title, artist: target.artist, medium: target.medium, price: target.price, image: target.image, saved_at: null, saved_at_formatted: null, saved_at_time: null, saved_at_relative: null },
               ...prev,
             ]
           : (prev) => prev.filter((a) => a.id !== artworkId)
@@ -721,9 +806,19 @@ export default function Dashboard() {
               <h2 className="text-sm font-semibold uppercase tracking-widest text-neutral-500 dark:text-neutral-400">
                 Saved Artworks
               </h2>
-              <span className="text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded-full font-semibold">
-                {stats.savedCount}
-              </span>
+              <div className="flex items-center gap-2">
+                {savedArtworks.length > 0 && (
+                  <button
+                    onClick={() => setShowSavedModal(true)}
+                    className="text-xs text-amber-500 hover:text-amber-600 dark:hover:text-amber-400 font-medium transition-colors"
+                  >
+                    View all →
+                  </button>
+                )}
+                <span className="text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded-full font-semibold">
+                  {stats.savedCount}
+                </span>
+              </div>
             </div>
             {savedArtworks.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-32 gap-2">
@@ -735,10 +830,18 @@ export default function Dashboard() {
                 </p>
               </div>
             ) : (
-              <div className="flex flex-col">
-                {savedArtworks.map((a) => (
+              <div className="flex flex-col overflow-y-auto pr-1" style={{ maxHeight: '17rem' }}>
+                {savedArtworks.slice(0, 4).map((a) => (
                   <SavedRow key={a.id} artwork={a} onRemove={handleRemoveSaved} />
                 ))}
+                {savedArtworks.length > 4 && (
+                  <button
+                    onClick={() => setShowSavedModal(true)}
+                    className="mt-2 w-full text-xs text-center text-amber-500 hover:text-amber-600 dark:hover:text-amber-400 font-medium py-2 border border-dashed border-amber-200 dark:border-amber-800 rounded-lg transition-colors"
+                  >
+                    + {savedArtworks.length - 4} more saved artworks
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -787,6 +890,13 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+      {showSavedModal && (
+        <SavedAllModal
+          artworks={savedArtworks}
+          onRemove={(id) => { handleRemoveSaved(id); }}
+          onClose={() => setShowSavedModal(false)}
+        />
+      )}
     </AppLayout>
   );
 }

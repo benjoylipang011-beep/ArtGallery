@@ -1,4 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react';
+import axios from 'axios';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 import { useState } from 'react';
@@ -26,6 +27,7 @@ interface Artwork {
 interface Props {
     artworks: Artwork[];
     authUserId: number;
+    savedIds: number[];
 }
 
 const gradients = [
@@ -100,15 +102,42 @@ function DeleteModal({ artwork, onClose }: { artwork: Artwork; onClose: () => vo
     );
 }
 
+// ── Save toast notification ───────────────────────────────────────────────────
+function SaveToast({ message, visible }: { message: string; visible: boolean }) {
+    return (
+        <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-[998] transition-all duration-300 ${
+            visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'
+        }`}>
+            <div className="bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 text-sm font-medium px-4 py-2.5 rounded-full shadow-lg flex items-center gap-2">
+                <Heart className="w-4 h-4 text-rose-400 dark:text-rose-500 fill-current" />
+                {message}
+            </div>
+        </div>
+    );
+}
+
 // ── Artwork card ──────────────────────────────────────────────────────────────
-function ArtworkCard({ artwork, index, authUserId, onDeleteRequest }: {
+function ArtworkCard({ artwork, index, authUserId, isSaved, onDeleteRequest, onToggleSave }: {
     artwork: Artwork;
     index: number;
     authUserId: number;
+    isSaved: boolean;
     onDeleteRequest: (artwork: Artwork) => void;
+    onToggleSave: (artworkId: number, currentlySaved: boolean) => void;
 }) {
     const color = gradients[index % gradients.length];
     const isOwner = artwork.user_id === authUserId;
+    const [saving, setSaving] = useState(false);
+
+    const handleSave = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        e.preventDefault();
+        if (saving) return;
+        setSaving(true);
+        onToggleSave(artwork.id, isSaved);
+        // Brief debounce to prevent double-clicks
+        setTimeout(() => setSaving(false), 600);
+    };
 
     return (
         <div className="rounded-xl border-[3px] border-neutral-300 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden flex flex-col hover:shadow-lg transition-shadow cursor-pointer group">
@@ -129,9 +158,24 @@ function ArtworkCard({ artwork, index, authUserId, onDeleteRequest }: {
 
                 {/* Hover overlay */}
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100">
-                    <button className="p-2 rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-sm transition-colors">
-                        <Heart className="w-5 h-5 text-white" />
+                    {/* Heart / Save button */}
+                    <button
+                        onClick={handleSave}
+                        disabled={saving}
+                        title={isSaved ? 'Remove from saved' : 'Save artwork'}
+                        className={`p-2 rounded-full backdrop-blur-sm transition-all ${
+                            isSaved
+                                ? 'bg-rose-500/80 hover:bg-rose-600/90'
+                                : 'bg-white/20 hover:bg-white/30'
+                        }`}
+                    >
+                        <Heart
+                            className={`w-5 h-5 transition-all ${
+                                isSaved ? 'text-white fill-white' : 'text-white'
+                            } ${saving ? 'scale-110' : ''}`}
+                        />
                     </button>
+
                     <Link
                         href={`/products/${artwork.id}`}
                         className="p-2 rounded-full bg-white/20 hover:bg-white/30 backdrop-blur-sm transition-colors"
@@ -139,6 +183,7 @@ function ArtworkCard({ artwork, index, authUserId, onDeleteRequest }: {
                     >
                         <Eye className="w-5 h-5 text-white" />
                     </Link>
+
                     {isOwner && (
                         <button
                             onClick={(e) => { e.stopPropagation(); onDeleteRequest(artwork); }}
@@ -149,6 +194,16 @@ function ArtworkCard({ artwork, index, authUserId, onDeleteRequest }: {
                         </button>
                     )}
                 </div>
+
+                {/* Saved indicator (always visible when saved) */}
+                {isSaved && (
+                    <div className="absolute bottom-2 right-2">
+                        <span className="flex items-center gap-1 bg-rose-500/90 text-white text-xs font-medium px-2 py-0.5 rounded-full">
+                            <Heart className="w-3 h-3 fill-white" />
+                            Saved
+                        </span>
+                    </div>
+                )}
 
                 {/* Status badge */}
                 <span className={`absolute top-2 left-2 text-xs font-medium px-2 py-0.5 rounded-full ${
@@ -188,10 +243,42 @@ function ArtworkCard({ artwork, index, authUserId, onDeleteRequest }: {
 }
 
 // ── Page ──────────────────────────────────────────────────────────────────────
-export default function ProductsIndex({ artworks, authUserId }: Props) {
+export default function ProductsIndex({ artworks, authUserId, savedIds: initialSavedIds }: Props) {
     const [deleteTarget, setDeleteTarget] = useState<Artwork | null>(null);
     const [search, setSearch] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('All Categories');
+    const [savedIds, setSavedIds] = useState<number[]>(initialSavedIds ?? []);
+    const [toast, setToast] = useState<{ message: string; visible: boolean }>({ message: '', visible: false });
+
+    const showToast = (message: string) => {
+        setToast({ message, visible: true });
+        setTimeout(() => setToast((t) => ({ ...t, visible: false })), 2500);
+    };
+
+    const handleToggleSave = async (artworkId: number, currentlySaved: boolean) => {
+        // Optimistic UI update
+        setSavedIds((prev) =>
+            currentlySaved ? prev.filter((id) => id !== artworkId) : [...prev, artworkId]
+        );
+
+        try {
+            if (currentlySaved) {
+                const res = await axios.delete(`/artworks/${artworkId}/save`);
+                setSavedIds((prev) => prev.filter((id) => id !== artworkId));
+                showToast('Removed from saved artworks');
+            } else {
+                const res = await axios.post(`/artworks/${artworkId}/save`);
+                setSavedIds((prev) => prev.includes(artworkId) ? prev : [...prev, artworkId]);
+                showToast('Artwork saved to your collection!');
+            }
+        } catch (err) {
+            // Revert optimistic update
+            setSavedIds((prev) =>
+                currentlySaved ? [...prev, artworkId] : prev.filter((id) => id !== artworkId)
+            );
+            showToast('Something went wrong. Please try again.');
+        }
+    };
 
     const categories = ['All Categories', ...Array.from(
         new Set(artworks.map((a) => a.category).filter(Boolean) as string[])
@@ -245,6 +332,12 @@ export default function ProductsIndex({ artworks, authUserId }: Props) {
                         {filtered.length !== artworks.length && (
                             <span> of <span className="font-semibold">{artworks.length}</span></span>
                         )} artworks
+                        {savedIds.length > 0 && (
+                            <span className="ml-3 inline-flex items-center gap-1 text-xs text-rose-500 dark:text-rose-400 font-medium">
+                                <Heart className="w-3 h-3 fill-current" />
+                                {savedIds.length} saved
+                            </span>
+                        )}
                         {(search || selectedCategory !== 'All Categories') && (
                             <button
                                 onClick={() => { setSearch(''); setSelectedCategory('All Categories'); }}
@@ -307,7 +400,9 @@ export default function ProductsIndex({ artworks, authUserId }: Props) {
                                 artwork={artwork}
                                 index={index}
                                 authUserId={authUserId}
+                                isSaved={savedIds.includes(artwork.id)}
                                 onDeleteRequest={setDeleteTarget}
+                                onToggleSave={handleToggleSave}
                             />
                         ))}
                     </div>
@@ -321,6 +416,9 @@ export default function ProductsIndex({ artworks, authUserId }: Props) {
                     onClose={() => setDeleteTarget(null)}
                 />
             )}
+
+            {/* Save toast */}
+            <SaveToast message={toast.message} visible={toast.visible} />
         </AppLayout>
     );
 }

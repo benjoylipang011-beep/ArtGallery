@@ -32,7 +32,6 @@ interface Notification {
     human_time: string;
 }
 
-// ── Dot colour map (mirrors your existing activity feed) ─────
 const DOT_COLORS: Record<string, string> = {
     artist_joined: 'bg-blue-500',
     exhibition:    'bg-red-500',
@@ -49,6 +48,24 @@ const JSON_HEADERS = {
     'X-Requested-With': 'XMLHttpRequest',
     'X-CSRF-TOKEN': '',
 };
+
+// ── Page transition hook ─────────────────────────────────────
+export function usePageTransition() {
+    const [visible, setVisible] = useState(true);
+
+    useEffect(() => {
+        // router.on() returns a cleanup function in Inertia v2
+        const removeStart  = router.on('start',  () => setVisible(false));
+        const removeFinish = router.on('finish', () => setTimeout(() => setVisible(true), 50));
+
+        return () => {
+            removeStart();
+            removeFinish();
+        };
+    }, []);
+
+    return visible;
+}
 
 // ── Notification Panel ───────────────────────────────────────
 function NotificationPanel({
@@ -122,7 +139,6 @@ function NotificationPanel({
             shadow-[0_8px_32px_rgba(0,0,0,0.55)]
             animate-in slide-in-from-left-2 fade-in duration-150
         ">
-            {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06]">
                 <span className="text-[11px] font-semibold tracking-widest text-white/50 uppercase flex items-center gap-2">
                     Notifications
@@ -146,7 +162,6 @@ function NotificationPanel({
                 </div>
             </div>
 
-            {/* Body */}
             <div className="max-h-[380px] overflow-y-auto [scrollbar-width:thin] [scrollbar-color:rgba(255,255,255,0.1)_transparent]">
                 {loading ? (
                     <div className="flex flex-col gap-3 p-4">
@@ -195,13 +210,12 @@ function NotificationPanel({
     );
 }
 
-// ── Bell trigger with floating badge ─────────────────────────
+// ── Bell trigger ─────────────────────────────────────────────
 function NotificationTrigger() {
     const [open, setOpen]               = useState(false);
     const [unreadCount, setUnreadCount] = useState(0);
     const containerRef                  = useRef<HTMLDivElement>(null);
 
-    // Initial badge count (lightweight — panel handles full polling when open)
     useEffect(() => {
         const poll = async () => {
             try {
@@ -223,7 +237,6 @@ function NotificationTrigger() {
         return () => clearInterval(interval);
     }, []);
 
-    // Close on outside click
     useEffect(() => {
         if (!open) return;
         const handler = (e: MouseEvent) => {
@@ -304,7 +317,7 @@ export function AppSidebar() {
             } catch { /* silent */ }
         };
         fetchCart();
-    }, [url]); // re-fetch on every page change
+    }, [url]);
 
     return (
         <Sidebar collapsible="icon" variant="inset">

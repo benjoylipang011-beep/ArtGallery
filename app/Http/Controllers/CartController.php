@@ -73,11 +73,19 @@ class CartController extends Controller
     }
 
     // Show checkout page
-    public function checkout()
+    public function checkout(Request $request)
     {
-        $cartItems = CartItem::with('artwork')
-            ->where('user_id', Auth::id())
-            ->get();
+        $query = CartItem::with('artwork')->where('user_id', Auth::id());
+
+        // If specific items were selected, filter to only those
+        if ($request->has('selected_ids')) {
+            $selectedIds = array_filter((array) $request->input('selected_ids'), 'is_numeric');
+            if (!empty($selectedIds)) {
+                $query->whereIn('artwork_id', $selectedIds);
+            }
+        }
+
+        $cartItems = $query->get();
 
         if ($cartItems->isEmpty()) {
             return redirect('/cart')->with('error', 'Your cart is empty.');
@@ -85,9 +93,17 @@ class CartController extends Controller
 
         $total = $cartItems->sum(fn($item) => $item->artwork->price ?? 0);
 
+        $user = Auth::user();
+
         return Inertia::render('cart/checkout', [
-            'cartItems' => $cartItems,
-            'total'     => $total,
+            'cartItems'   => $cartItems,
+            'total'       => $total,
+            'selectedIds' => $cartItems->pluck('artwork_id')->values()->toArray(),
+            'userProfile' => [
+                'name'     => $user->name,
+                'phone'    => $user->phone,
+                'location' => $user->location,
+            ],
         ]);
     }
 
@@ -99,11 +115,18 @@ class CartController extends Controller
             'phone'          => 'required|string|max:20',
             'address'        => 'required|string',
             'payment_method' => 'required|in:cash_on_delivery,gcash',
+            'selected_ids'   => 'nullable|array',
+            'selected_ids.*' => 'integer|exists:artworks,id',
         ]);
 
-        $cartItems = CartItem::with('artwork')
-            ->where('user_id', Auth::id())
-            ->get();
+        $query = CartItem::with('artwork')->where('user_id', Auth::id());
+
+        // Only process selected items if provided
+        if ($request->filled('selected_ids')) {
+            $query->whereIn('artwork_id', $request->input('selected_ids'));
+        }
+
+        $cartItems = $query->get();
 
         if ($cartItems->isEmpty()) {
             return back()->with('error', 'Your cart is empty.');
@@ -133,8 +156,11 @@ class CartController extends Controller
                 $item->artwork->update(['status' => 'reserved']);
             }
 
-            // Clear cart
-            CartItem::where('user_id', Auth::id())->delete();
+            // Only remove the ordered items from cart (not unselected ones)
+            $orderedArtworkIds = $cartItems->pluck('artwork_id')->toArray();
+            CartItem::where('user_id', Auth::id())
+                ->whereIn('artwork_id', $orderedArtworkIds)
+                ->delete();
         });
 
         return redirect('/orders')->with('success', 'Order placed successfully!');
@@ -155,8 +181,15 @@ class CartController extends Controller
             return redirect('/products/' . $artwork->id)->with('error', 'This artwork is no longer available.');
         }
 
+        $user = Auth::user();
+
         return Inertia::render('cart/buy-now', [
-            'artwork' => $artwork,
+            'artwork'     => $artwork,
+            'userProfile' => [
+                'name'     => $user->name,
+                'phone'    => $user->phone,
+                'location' => $user->location,
+            ],
         ]);
     }
 
