@@ -12,7 +12,7 @@ class ProfileController extends Controller
     public function show()
     {
         $user = Auth::user();
-        return Inertia::render('profile', [
+        return Inertia::render('profile/index', [
             'auth' => ['user' => $user],
         ]);
     }
