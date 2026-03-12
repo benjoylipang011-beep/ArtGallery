@@ -5,9 +5,13 @@ type Props = React.ComponentProps<'main'> & {
     variant?: 'header' | 'sidebar';
 };
 
-export function AppContent({ variant = 'header', children, ...props }: Props) {
+export function AppContent({ variant = 'header', children, className = '', ...props }: Props) {
     if (variant === 'sidebar') {
-        return <SidebarInset {...props}>{children}</SidebarInset>;
+        return (
+            <SidebarInset className={`!p-0 !mx-0 !max-w-none w-full ${className}`} {...props}>
+                {children}
+            </SidebarInset>
+        );
     }
 
     return (

@@ -85,7 +85,7 @@ export default function CartIndex({ cartItems, total }: Props) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="My Cart" />
-            <div className="flex h-full flex-1 flex-col gap-6 rounded-xl p-4 max-w-4xl mx-auto w-full">
+            <div className="flex h-full flex-1 flex-col gap-6 rounded-xl p-6 w-full">
 
                 {/* Header */}
                 <div className="flex items-center gap-3">
@@ -163,7 +163,7 @@ export default function CartIndex({ cartItems, total }: Props) {
                                     <button
                                         onClick={(e) => { e.stopPropagation(); handleRemove(item.artwork_id); }}
                                         disabled={removingId === item.artwork_id}
-                                        className="shrink-0 p-2 rounded-lg text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-40"
+                                        className="shrink-0 self-center p-2 rounded-lg text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-40"
                                         title="Remove from cart"
                                     >
                                         {removingId === item.artwork_id ? (

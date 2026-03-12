@@ -59,7 +59,7 @@ export default function Checkout({ cartItems, total, userProfile, selectedIds }:
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Checkout" />
-            <div className="flex h-full flex-1 flex-col gap-6 rounded-xl p-4 max-w-4xl mx-auto w-full">
+            <div className="flex h-full flex-1 flex-col gap-6 rounded-xl w-full">
 
                 {/* Header */}
                 <div className="flex items-center gap-3">

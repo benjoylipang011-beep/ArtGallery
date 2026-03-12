@@ -4,7 +4,9 @@ use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
 use App\Http\Controllers\ArtworkController;
 use App\Http\Controllers\CartController;
+use App\Http\Controllers\OrderController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Auth\PasswordResetOtpController;
 use App\Http\Controllers\Auth\SocialAuthController;
@@ -51,8 +53,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('products',       [ArtworkController::class, 'store'])->name('products.store');
 
     // Static pages MUST come before the {artwork} wildcard
-    Route::inertia('products/categories', 'products/categories')->name('products.categories');
-    Route::inertia('products/archived',   'products/archived')->name('products.archived');
+    Route::get('products/categories',         [CategoryController::class, 'index'])->name('products.categories');
+    Route::post('products/categories',        [CategoryController::class, 'store'])->name('products.categories.store');
+    Route::put('products/categories/{category}',    [CategoryController::class, 'update'])->name('products.categories.update');
+    Route::delete('products/categories/{category}', [CategoryController::class, 'destroy'])->name('products.categories.destroy');
+    Route::get('products/categories/list',    [CategoryController::class, 'list'])->name('products.categories.list');
+    Route::inertia('products/archived',       'products/archived')->name('products.archived');
 
     // Wildcard routes last so they don't swallow the static ones above
     Route::get('products/{artwork}',    [ArtworkController::class, 'show'])->name('products.show');
@@ -72,8 +78,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/cart/buy-now',        [CartController::class, 'buyNow'])->name('cart.buy-now');
     Route::post('/cart/buy-now/place', [CartController::class, 'placeBuyNow'])->name('cart.buy-now.place');
 
-    // Orders history
-    Route::get('/orders', [CartController::class, 'orders'])->name('orders.index');
+    // ── Orders ────────────────────────────────────────────────────────────────
+    Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
+
+    // ── Admin: Order status management ────────────────────────────────────────
+    Route::patch('/admin/orders/{order}/status', [OrderController::class, 'updateStatus'])
+        ->name('admin.orders.status');
+    Route::get('/admin/orders', [OrderController::class, 'adminIndex'])
+        ->name('admin.orders.index');
 
 });
 
