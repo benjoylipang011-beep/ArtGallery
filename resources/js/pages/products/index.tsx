@@ -55,24 +55,24 @@ function DeleteModal({ artwork, onClose }: { artwork: Artwork; onClose: () => vo
 
     return (
         <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl border-[3px] border-neutral-300 dark:border-neutral-800 w-full max-w-sm p-6 flex flex-col gap-4">
+            <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl border border-black dark:border-neutral-600 w-full max-w-sm p-6 flex flex-col gap-4">
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center shrink-0">
                         <Trash2 className="w-5 h-5 text-red-600 dark:text-red-400" />
                     </div>
                     <div>
-                        <h3 className="font-bold text-neutral-900 dark:text-white">Delete Artwork</h3>
-                        <p className="text-sm text-neutral-500 dark:text-neutral-400">This action cannot be undone.</p>
+                        <h3 className="font-bold text-black dark:text-white">Delete Artwork</h3>
+                        <p className="text-sm text-black dark:text-black">This action cannot be undone.</p>
                     </div>
                 </div>
-                <p className="text-sm text-neutral-600 dark:text-neutral-300">
+                <p className="text-sm text-black dark:text-neutral-300">
                     Are you sure you want to delete <span className="font-semibold">"{artwork.title}"</span>? It will be permanently removed from the gallery.
                 </p>
                 <div className="flex gap-3 mt-1">
                     <button
                         onClick={onClose}
                         disabled={deleting}
-                        className="flex-1 rounded-lg border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 font-medium py-2.5 text-sm hover:bg-neutral-50 dark:hover:bg-neutral-800 transition disabled:opacity-50"
+                        className="flex-1 rounded-lg border border-neutral-200 dark:border-neutral-700 text-black dark:text-black font-medium py-2.5 text-sm hover:bg-neutral-50 dark:hover:bg-neutral-800 transition disabled:opacity-50"
                     >
                         Cancel
                     </button>
@@ -108,7 +108,7 @@ function SaveToast({ message, visible }: { message: string; visible: boolean }) 
         <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-[998] transition-all duration-300 ${
             visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'
         }`}>
-            <div className="bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 text-sm font-medium px-4 py-2.5 rounded-full shadow-lg flex items-center gap-2">
+            <div className="bg-neutral-900 dark:bg-white text-white dark:text-black text-sm font-medium px-4 py-2.5 rounded-full shadow-lg flex items-center gap-2">
                 <Heart className="w-4 h-4 text-rose-400 dark:text-rose-500 fill-current" />
                 {message}
             </div>
@@ -140,7 +140,7 @@ function ArtworkCard({ artwork, index, authUserId, isSaved, onDeleteRequest, onT
     };
 
     return (
-        <div className="rounded-xl border-[3px] border-neutral-300 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden flex flex-col hover:shadow-lg transition-shadow cursor-pointer group">
+        <div className="rounded-xl border border-black dark:border-neutral-600 bg-white dark:bg-neutral-900 overflow-hidden flex flex-col hover:shadow-lg transition-shadow cursor-pointer group">
             <div className="relative">
                 {artwork.image ? (
                     <img
@@ -225,14 +225,14 @@ function ArtworkCard({ artwork, index, authUserId, isSaved, onDeleteRequest, onT
 
             <div className="p-4 flex-1 flex flex-col">
                 <div className="flex-1">
-                    <p className="font-semibold text-neutral-900 dark:text-white text-sm leading-tight truncate">
+                    <p className="font-semibold text-black dark:text-white text-sm leading-tight truncate">
                         {artwork.title}
                     </p>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">{artwork.artist}</p>
+                    <p className="text-xs text-black dark:text-black mt-1">{artwork.artist}</p>
                 </div>
 
                 <div className="flex items-center justify-between mt-4 pt-3 border-t border-neutral-100 dark:border-neutral-800">
-                    <span className="text-xs text-neutral-400">{artwork.category ?? '—'}</span>
+                    <span className="text-xs text-black">{artwork.category ?? '—'}</span>
                     <span className="font-semibold text-sm text-amber-600 dark:text-amber-400">
                         {artwork.price ? `₱${Number(artwork.price).toLocaleString()}` : '—'}
                     </span>
@@ -305,14 +305,14 @@ export default function ProductsIndex({ artworks, authUserId, savedIds: initialS
                 {/* Header */}
                 <div>
                     <div className="flex items-center justify-between mb-2">
-                        <h1 className="text-3xl font-bold text-neutral-900 dark:text-white tracking-tight">
+                        <h1 className="text-3xl font-bold text-black dark:text-white tracking-tight">
                             All Artworks
                         </h1>
                         <div className="flex items-center gap-2">
                             <select
                                 value={selectedCategory}
                                 onChange={(e) => setSelectedCategory(e.target.value)}
-                                className="px-3 py-2 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white"
+                                className="px-3 py-2 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-black dark:text-white"
                             >
                                 {categories.map((cat) => (
                                     <option key={cat} value={cat}>{cat}</option>
@@ -327,7 +327,7 @@ export default function ProductsIndex({ artworks, authUserId, savedIds: initialS
                             </Link>
                         </div>
                     </div>
-                    <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                    <p className="text-sm text-black dark:text-black">
                         Showing <span className="font-semibold">{filtered.length}</span>
                         {filtered.length !== artworks.length && (
                             <span> of <span className="font-semibold">{artworks.length}</span></span>
@@ -352,7 +352,7 @@ export default function ProductsIndex({ artworks, authUserId, savedIds: initialS
                 {/* Search Bar */}
                 <div className="flex items-center gap-2">
                     <div className="relative group">
-                        <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none z-10 transition-colors group-focus-within:text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-black pointer-events-none z-10 transition-colors group-focus-within:text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
                         </svg>
                         <input
@@ -360,12 +360,12 @@ export default function ProductsIndex({ artworks, authUserId, savedIds: initialS
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             placeholder="Search artworks..."
-                            className="pl-9 pr-8 py-2 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white placeholder-neutral-500 dark:placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-500 transition-[width,border-color,box-shadow] duration-500 ease-in-out w-44 focus:w-96"
+                            className="pl-9 pr-8 py-2 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-black dark:text-white placeholder-neutral-500 dark:placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-500 transition-[width,border-color,box-shadow] duration-500 ease-in-out w-44 focus:w-96"
                         />
                         {search && (
                             <button
                                 onClick={() => setSearch('')}
-                                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 transition-colors"
+                                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-black hover:text-black dark:hover:text-neutral-200 transition-colors"
                             >
                                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
@@ -377,12 +377,12 @@ export default function ProductsIndex({ artworks, authUserId, savedIds: initialS
 
                 {/* Artworks Grid */}
                 {artworks.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-20 text-neutral-400">
+                    <div className="flex flex-col items-center justify-center py-20 text-black">
                         <p className="text-lg font-medium">No artworks yet</p>
                         <p className="text-sm mt-1">Click "Add Artwork" to add your first piece.</p>
                     </div>
                 ) : filtered.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-20 text-neutral-400">
+                    <div className="flex flex-col items-center justify-center py-20 text-black">
                         <p className="text-lg font-medium">No results found</p>
                         <p className="text-sm mt-1">Try a different search term or category.</p>
                         <button

@@ -29,6 +29,7 @@ class CategoryController extends Controller
         return back();
     }
 
+
     public function update(Request $request, Category $category)
     {
         $request->validate([

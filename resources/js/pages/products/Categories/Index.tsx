@@ -70,8 +70,8 @@ export default function CategoriesIndex({ categories }: Props) {
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <Tag className="w-6 h-6 text-amber-500" />
-                        <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">Categories</h1>
-                        <span className="text-sm text-neutral-400">({categories.length})</span>
+                        <h1 className="text-2xl font-bold text-black dark:text-white">Categories</h1>
+                        <span className="text-sm text-black">({categories.length})</span>
                     </div>
                     <button
                         onClick={openCreate}
@@ -84,40 +84,40 @@ export default function CategoriesIndex({ categories }: Props) {
 
                 {/* Create / Edit Form */}
                 {showForm && (
-                    <div className="rounded-xl border-[3px] border-amber-400 dark:border-amber-500/60 bg-white dark:bg-neutral-900 p-5">
+                    <div className="rounded-xl border border-black dark:border-neutral-600 bg-white dark:bg-neutral-900 p-5">
                         <div className="flex items-center justify-between mb-4">
-                            <h2 className="font-semibold text-neutral-900 dark:text-white">
+                            <h2 className="font-semibold text-black dark:text-white">
                                 {editId ? 'Edit Category' : 'New Category'}
                             </h2>
-                            <button onClick={() => setShowForm(false)} className="text-neutral-400 hover:text-neutral-700 dark:hover:text-white transition-colors">
+                            <button onClick={() => setShowForm(false)} className="text-black hover:text-black dark:hover:text-white transition-colors">
                                 <X className="w-4 h-4" />
                             </button>
                         </div>
                         <div className="flex flex-col gap-3">
                             <div>
-                                <label className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">Name</label>
+                                <label className="text-xs font-medium text-black dark:text-black uppercase tracking-wider">Name</label>
                                 <input
                                     type="text"
                                     value={form.name}
                                     onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                                     placeholder="e.g. Oil Painting"
-                                    className="mt-1 w-full px-4 py-2.5 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-amber-500/40"
+                                    className="mt-1 w-full px-4 py-2.5 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-black dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-amber-500/40"
                                 />
                             </div>
                             <div>
-                                <label className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">Description <span className="normal-case font-normal">(optional)</span></label>
+                                <label className="text-xs font-medium text-black dark:text-black uppercase tracking-wider">Description <span className="normal-case font-normal">(optional)</span></label>
                                 <textarea
                                     value={form.description}
                                     onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
                                     placeholder="Brief description of this category..."
                                     rows={2}
-                                    className="mt-1 w-full px-4 py-2.5 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-amber-500/40 resize-none"
+                                    className="mt-1 w-full px-4 py-2.5 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-black dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-amber-500/40 resize-none"
                                 />
                             </div>
                             <div className="flex gap-2 justify-end">
                                 <button
                                     onClick={() => setShowForm(false)}
-                                    className="px-4 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700 text-sm text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
+                                    className="px-4 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700 text-sm text-black dark:text-black hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
                                 >
                                     Cancel
                                 </button>
@@ -143,7 +143,7 @@ export default function CategoriesIndex({ categories }: Props) {
 
                 {/* Empty state */}
                 {categories.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-24 gap-4 text-neutral-400">
+                    <div className="flex flex-col items-center justify-center py-24 gap-4 text-black">
                         <PackageOpen className="w-16 h-16 opacity-30" strokeWidth={1} />
                         <p className="text-lg font-medium">No categories yet</p>
                         <button
@@ -158,7 +158,7 @@ export default function CategoriesIndex({ categories }: Props) {
                         {categories.map((cat) => (
                             <div
                                 key={cat.id}
-                                className="rounded-xl border-[3px] border-neutral-300 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-5 flex flex-col gap-3 hover:border-amber-400 dark:hover:border-amber-500/50 transition-colors group"
+                                className="rounded-xl border border-black dark:border-neutral-600 bg-white dark:bg-neutral-900 p-5 flex flex-col gap-3 hover:border-amber-400 dark:hover:border-amber-500/50 transition-colors group"
                             >
                                 {/* Icon + name */}
                                 <div className="flex items-start justify-between gap-2">
@@ -167,8 +167,8 @@ export default function CategoriesIndex({ categories }: Props) {
                                             <Tag className="w-5 h-5 text-amber-500" />
                                         </div>
                                         <div>
-                                            <p className="font-semibold text-neutral-900 dark:text-white leading-tight">{cat.name}</p>
-                                            <p className="text-xs text-neutral-400 mt-0.5">
+                                            <p className="font-semibold text-black dark:text-white leading-tight">{cat.name}</p>
+                                            <p className="text-xs text-black mt-0.5">
                                                 {cat.artworks_count} artwork{cat.artworks_count !== 1 ? 's' : ''}
                                             </p>
                                         </div>
@@ -177,7 +177,7 @@ export default function CategoriesIndex({ categories }: Props) {
 
                                 {/* Description */}
                                 {cat.description && (
-                                    <p className="text-xs text-neutral-500 dark:text-neutral-400 line-clamp-2 leading-relaxed">
+                                    <p className="text-xs text-black dark:text-black line-clamp-2 leading-relaxed">
                                         {cat.description}
                                     </p>
                                 )}
@@ -186,13 +186,13 @@ export default function CategoriesIndex({ categories }: Props) {
                                 <div className="flex gap-2 mt-auto pt-2 border-t border-neutral-100 dark:border-neutral-800">
                                     <Link
                                         href={`/products?category=${cat.id}`}
-                                        className="flex-1 text-center text-xs font-medium py-1.5 rounded-lg bg-neutral-50 dark:bg-neutral-800 hover:bg-amber-50 dark:hover:bg-amber-500/10 text-neutral-600 dark:text-neutral-400 hover:text-amber-600 dark:hover:text-amber-400 transition-colors"
+                                        className="flex-1 text-center text-xs font-medium py-1.5 rounded-lg bg-neutral-50 dark:bg-neutral-800 hover:bg-amber-50 dark:hover:bg-amber-500/10 text-black dark:text-black hover:text-amber-600 dark:hover:text-amber-400 transition-colors"
                                     >
                                         View Artworks
                                     </Link>
                                     <button
                                         onClick={() => openEdit(cat)}
-                                        className="p-1.5 rounded-lg text-neutral-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-500/10 transition-colors"
+                                        className="p-1.5 rounded-lg text-black hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-500/10 transition-colors"
                                         title="Edit"
                                     >
                                         <Pencil className="w-3.5 h-3.5" />
@@ -200,7 +200,7 @@ export default function CategoriesIndex({ categories }: Props) {
                                     <button
                                         onClick={() => handleDelete(cat.id)}
                                         disabled={deletingId === cat.id}
-                                        className="p-1.5 rounded-lg text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-40"
+                                        className="p-1.5 rounded-lg text-black hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-40"
                                         title="Delete"
                                     >
                                         {deletingId === cat.id ? (

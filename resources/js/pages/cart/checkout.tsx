@@ -63,10 +63,10 @@ export default function Checkout({ cartItems, total, userProfile, selectedIds }:
 
                 {/* Header */}
                 <div className="flex items-center gap-3">
-                    <Link href="/cart" className="text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors">
+                    <Link href="/cart" className="text-black hover:text-black dark:hover:text-white transition-colors">
                         <ArrowLeft className="w-5 h-5" />
                     </Link>
-                    <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">Checkout</h1>
+                    <h1 className="text-2xl font-bold text-black dark:text-white">Checkout</h1>
                 </div>
 
                 <div className="grid md:grid-cols-3 gap-6">
@@ -75,14 +75,14 @@ export default function Checkout({ cartItems, total, userProfile, selectedIds }:
                     <div className="md:col-span-2 flex flex-col gap-5">
 
                         {/* Delivery info */}
-                        <div className="rounded-xl border-[3px] border-neutral-300 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-5">
-                            <h2 className="font-semibold text-neutral-900 dark:text-white mb-4 flex items-center gap-2">
+                        <div className="rounded-xl border border-black dark:border-neutral-600 bg-white dark:bg-neutral-900 p-5">
+                            <h2 className="font-semibold text-black dark:text-white mb-4 flex items-center gap-2">
                                 <Truck className="w-4 h-4 text-amber-500" />
                                 Delivery Information
                             </h2>
                             <div className="flex flex-col gap-4">
                                 <div>
-                                    <label className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider flex items-center gap-2">
+                                    <label className="text-xs font-medium text-black dark:text-black uppercase tracking-wider flex items-center gap-2">
                                         Full Name
                                         {userProfile?.name && <span className="normal-case text-xs font-normal text-amber-500 bg-amber-50 dark:bg-amber-900/20 px-1.5 py-0.5 rounded-full">auto-filled</span>}
                                     </label>
@@ -91,11 +91,11 @@ export default function Checkout({ cartItems, total, userProfile, selectedIds }:
                                         value={form.full_name}
                                         onChange={e => setForm(f => ({ ...f, full_name: e.target.value }))}
                                         placeholder="Juan dela Cruz"
-                                        className="mt-1 w-full px-4 py-2.5 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-amber-500/40"
+                                        className="mt-1 w-full px-4 py-2.5 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-black dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-amber-500/40"
                                     />
                                 </div>
                                 <div>
-                                    <label className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider flex items-center gap-2">
+                                    <label className="text-xs font-medium text-black dark:text-black uppercase tracking-wider flex items-center gap-2">
                                         Phone Number
                                         {userProfile?.phone && <span className="normal-case text-xs font-normal text-amber-500 bg-amber-50 dark:bg-amber-900/20 px-1.5 py-0.5 rounded-full">auto-filled</span>}
                                     </label>
@@ -104,11 +104,11 @@ export default function Checkout({ cartItems, total, userProfile, selectedIds }:
                                         value={form.phone}
                                         onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
                                         placeholder="09XX XXX XXXX"
-                                        className="mt-1 w-full px-4 py-2.5 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-amber-500/40"
+                                        className="mt-1 w-full px-4 py-2.5 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-black dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-amber-500/40"
                                     />
                                 </div>
                                 <div>
-                                    <label className="text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider flex items-center gap-2">
+                                    <label className="text-xs font-medium text-black dark:text-black uppercase tracking-wider flex items-center gap-2">
                                         Delivery Address
                                         {userProfile?.location && <span className="normal-case text-xs font-normal text-amber-500 bg-amber-50 dark:bg-amber-900/20 px-1.5 py-0.5 rounded-full">auto-filled from profile</span>}
                                     </label>
@@ -117,15 +117,15 @@ export default function Checkout({ cartItems, total, userProfile, selectedIds }:
                                         onChange={e => setForm(f => ({ ...f, address: e.target.value }))}
                                         placeholder="Street, Barangay, City, Province"
                                         rows={3}
-                                        className="mt-1 w-full px-4 py-2.5 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-amber-500/40 resize-none"
+                                        className="mt-1 w-full px-4 py-2.5 text-sm rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-black dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-amber-500/40 resize-none"
                                     />
                                 </div>
                             </div>
                         </div>
 
                         {/* Payment method */}
-                        <div className="rounded-xl border-[3px] border-neutral-300 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-5">
-                            <h2 className="font-semibold text-neutral-900 dark:text-white mb-4 flex items-center gap-2">
+                        <div className="rounded-xl border border-black dark:border-neutral-600 bg-white dark:bg-neutral-900 p-5">
+                            <h2 className="font-semibold text-black dark:text-white mb-4 flex items-center gap-2">
                                 <CreditCard className="w-4 h-4 text-amber-500" />
                                 Payment Method
                             </h2>
@@ -151,8 +151,8 @@ export default function Checkout({ cartItems, total, userProfile, selectedIds }:
                                             className="accent-amber-500"
                                         />
                                         <div>
-                                            <p className="font-medium text-sm text-neutral-900 dark:text-white">{method.label}</p>
-                                            <p className="text-xs text-neutral-500 dark:text-neutral-400">{method.desc}</p>
+                                            <p className="font-medium text-sm text-black dark:text-white">{method.label}</p>
+                                            <p className="text-xs text-black dark:text-black">{method.desc}</p>
                                         </div>
                                     </label>
                                 ))}
@@ -162,8 +162,8 @@ export default function Checkout({ cartItems, total, userProfile, selectedIds }:
 
                     {/* Order summary */}
                     <div className="md:col-span-1">
-                        <div className="rounded-xl border-[3px] border-neutral-300 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-5 sticky top-4">
-                            <h2 className="font-semibold text-neutral-900 dark:text-white mb-4">Order Summary</h2>
+                        <div className="rounded-xl border border-black dark:border-neutral-600 bg-white dark:bg-neutral-900 p-5 sticky top-4">
+                            <h2 className="font-semibold text-black dark:text-white mb-4">Order Summary</h2>
 
                             <div className="flex flex-col gap-3">
                                 {cartItems.map((item) => (
@@ -176,7 +176,7 @@ export default function Checkout({ cartItems, total, userProfile, selectedIds }:
                                             )}
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-xs font-medium text-neutral-900 dark:text-white truncate">{item.artwork.title}</p>
+                                            <p className="text-xs font-medium text-black dark:text-white truncate">{item.artwork.title}</p>
                                             <p className="text-xs text-amber-600 dark:text-amber-400">
                                                 {item.artwork.price ? `₱${Number(item.artwork.price).toLocaleString()}` : '—'}
                                             </p>
@@ -185,7 +185,7 @@ export default function Checkout({ cartItems, total, userProfile, selectedIds }:
                                 ))}
                             </div>
 
-                            <div className="mt-4 pt-4 border-t border-neutral-100 dark:border-neutral-800 flex justify-between font-bold text-neutral-900 dark:text-white">
+                            <div className="mt-4 pt-4 border-t border-neutral-100 dark:border-neutral-800 flex justify-between font-bold text-black dark:text-white">
                                 <span>Total</span>
                                 <span className="text-amber-600 dark:text-amber-400">₱{Number(total).toLocaleString()}</span>
                             </div>

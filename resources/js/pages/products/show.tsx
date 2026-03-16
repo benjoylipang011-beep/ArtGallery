@@ -76,8 +76,8 @@ export default function ShowArtwork({ artwork, authUserId, inCart }: Props) {
         available: 'bg-green-500/15 text-green-600 dark:text-green-400 border border-green-500/30',
         sold:      'bg-red-500/15 text-red-600 dark:text-red-400 border border-red-500/30',
         reserved:  'bg-yellow-500/15 text-yellow-600 dark:text-yellow-400 border border-yellow-500/30',
-        archived:  'bg-neutral-500/15 text-neutral-500 dark:text-neutral-400 border border-neutral-500/30',
-    }[artwork.status] ?? 'bg-neutral-500/15 text-neutral-500 border border-neutral-500/30';
+        archived:  'bg-neutral-500/15 text-black dark:text-black border border-neutral-500/30',
+    }[artwork.status] ?? 'bg-neutral-500/15 text-black border border-neutral-500/30';
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -88,7 +88,7 @@ export default function ShowArtwork({ artwork, authUserId, inCart }: Props) {
                 <div className="flex items-center justify-between">
                     <Link
                         href="/products"
-                        className="flex items-center gap-2 text-sm text-neutral-500 hover:text-neutral-900 dark:hover:text-white transition-colors"
+                        className="flex items-center gap-2 text-sm text-black hover:text-black dark:hover:text-white transition-colors"
                     >
                         <ArrowLeft className="w-4 h-4" />
                         Back to All Artworks
@@ -110,7 +110,7 @@ export default function ShowArtwork({ artwork, authUserId, inCart }: Props) {
 
                     {/* Left — image */}
                     <div className="md:col-span-2">
-                        <div className="rounded-2xl overflow-hidden border-[3px] border-neutral-300 dark:border-neutral-800 shadow-sm">
+                        <div className="rounded-2xl overflow-hidden border border-black dark:border-neutral-600 shadow-sm">
                             {artwork.image ? (
                                 <img
                                     src={`/storage/${artwork.image}`}
@@ -132,7 +132,7 @@ export default function ShowArtwork({ artwork, authUserId, inCart }: Props) {
                                 {artwork.status.charAt(0).toUpperCase() + artwork.status.slice(1)}
                             </span>
                             {artwork.category && (
-                                <span className="text-xs text-neutral-400 dark:text-neutral-500 bg-neutral-100 dark:bg-neutral-800 px-3 py-1 rounded-full">
+                                <span className="text-xs text-black dark:text-black bg-neutral-100 dark:bg-neutral-800 px-3 py-1 rounded-full">
                                     {artwork.category}
                                 </span>
                             )}
@@ -144,10 +144,10 @@ export default function ShowArtwork({ artwork, authUserId, inCart }: Props) {
 
                         {/* Title & artist */}
                         <div>
-                            <h1 className="text-3xl font-bold text-neutral-900 dark:text-white tracking-tight leading-tight">
+                            <h1 className="text-3xl font-bold text-black dark:text-white tracking-tight leading-tight">
                                 {artwork.title}
                             </h1>
-                            <p className="mt-1 text-base text-neutral-500 dark:text-neutral-400 flex items-center gap-1.5">
+                            <p className="mt-1 text-base text-black dark:text-black flex items-center gap-1.5">
                                 <User className="w-4 h-4" />
                                 {artwork.artist}
                             </p>
@@ -189,68 +189,68 @@ export default function ShowArtwork({ artwork, authUserId, inCart }: Props) {
                         )}
 
                         {!isOwner && !isAvailable && (
-                            <div className="px-4 py-3 rounded-xl bg-neutral-100 dark:bg-neutral-800 text-neutral-500 dark:text-neutral-400 text-sm font-medium text-center">
+                            <div className="px-4 py-3 rounded-xl bg-neutral-100 dark:bg-neutral-800 text-black dark:text-black text-sm font-medium text-center">
                                 This artwork is no longer available
                             </div>
                         )}
 
                         {/* Description */}
                         {artwork.description && (
-                            <div className="rounded-xl border-[3px] border-neutral-300 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-5">
-                                <h2 className="text-xs font-semibold uppercase tracking-widest text-neutral-400 mb-2 flex items-center gap-1.5">
+                            <div className="rounded-xl border border-black dark:border-neutral-600 bg-white dark:bg-neutral-900 p-5">
+                                <h2 className="text-xs font-semibold uppercase tracking-widest text-black mb-2 flex items-center gap-1.5">
                                     <FileText className="w-3.5 h-3.5" /> Description
                                 </h2>
-                                <p className="text-sm text-neutral-700 dark:text-neutral-300 leading-relaxed">
+                                <p className="text-sm text-black dark:text-neutral-300 leading-relaxed">
                                     {artwork.description}
                                 </p>
                             </div>
                         )}
 
                         {/* Details grid */}
-                        <div className="rounded-xl border-[3px] border-neutral-300 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-5">
-                            <h2 className="text-xs font-semibold uppercase tracking-widest text-neutral-400 mb-4">Artwork Details</h2>
+                        <div className="rounded-xl border border-black dark:border-neutral-600 bg-white dark:bg-neutral-900 p-5">
+                            <h2 className="text-xs font-semibold uppercase tracking-widest text-black mb-4">Artwork Details</h2>
                             <div className="grid grid-cols-2 gap-4">
                                 {artwork.medium && (
                                     <div className="flex items-start gap-3">
                                         <div className="mt-0.5 w-8 h-8 rounded-lg bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center shrink-0">
-                                            <Palette className="w-4 h-4 text-neutral-500" />
+                                            <Palette className="w-4 h-4 text-black" />
                                         </div>
                                         <div>
-                                            <p className="text-[11px] text-neutral-400 uppercase tracking-wider">Medium</p>
-                                            <p className="text-sm font-medium text-neutral-900 dark:text-white mt-0.5">{artwork.medium}</p>
+                                            <p className="text-[11px] text-black uppercase tracking-wider">Medium</p>
+                                            <p className="text-sm font-medium text-black dark:text-white mt-0.5">{artwork.medium}</p>
                                         </div>
                                     </div>
                                 )}
                                 {artwork.year && (
                                     <div className="flex items-start gap-3">
                                         <div className="mt-0.5 w-8 h-8 rounded-lg bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center shrink-0">
-                                            <Calendar className="w-4 h-4 text-neutral-500" />
+                                            <Calendar className="w-4 h-4 text-black" />
                                         </div>
                                         <div>
-                                            <p className="text-[11px] text-neutral-400 uppercase tracking-wider">Year</p>
-                                            <p className="text-sm font-medium text-neutral-900 dark:text-white mt-0.5">{artwork.year}</p>
+                                            <p className="text-[11px] text-black uppercase tracking-wider">Year</p>
+                                            <p className="text-sm font-medium text-black dark:text-white mt-0.5">{artwork.year}</p>
                                         </div>
                                     </div>
                                 )}
                                 {artwork.dimensions && (
                                     <div className="flex items-start gap-3">
                                         <div className="mt-0.5 w-8 h-8 rounded-lg bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center shrink-0">
-                                            <Ruler className="w-4 h-4 text-neutral-500" />
+                                            <Ruler className="w-4 h-4 text-black" />
                                         </div>
                                         <div>
-                                            <p className="text-[11px] text-neutral-400 uppercase tracking-wider">Dimensions</p>
-                                            <p className="text-sm font-medium text-neutral-900 dark:text-white mt-0.5">{artwork.dimensions}</p>
+                                            <p className="text-[11px] text-black uppercase tracking-wider">Dimensions</p>
+                                            <p className="text-sm font-medium text-black dark:text-white mt-0.5">{artwork.dimensions}</p>
                                         </div>
                                     </div>
                                 )}
                                 {artwork.category && (
                                     <div className="flex items-start gap-3">
                                         <div className="mt-0.5 w-8 h-8 rounded-lg bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center shrink-0">
-                                            <Tag className="w-4 h-4 text-neutral-500" />
+                                            <Tag className="w-4 h-4 text-black" />
                                         </div>
                                         <div>
-                                            <p className="text-[11px] text-neutral-400 uppercase tracking-wider">Category</p>
-                                            <p className="text-sm font-medium text-neutral-900 dark:text-white mt-0.5">{artwork.category}</p>
+                                            <p className="text-[11px] text-black uppercase tracking-wider">Category</p>
+                                            <p className="text-sm font-medium text-black dark:text-white mt-0.5">{artwork.category}</p>
                                         </div>
                                     </div>
                                 )}
@@ -258,7 +258,7 @@ export default function ShowArtwork({ artwork, authUserId, inCart }: Props) {
                         </div>
 
                         {/* Added on */}
-                        <p className="text-xs text-neutral-400">
+                        <p className="text-xs text-black">
                             Added on {new Date(artwork.created_at).toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' })}
                         </p>
                     </div>
@@ -268,24 +268,24 @@ export default function ShowArtwork({ artwork, authUserId, inCart }: Props) {
             {/* ── Delete confirmation modal ── */}
             {showDeleteModal && (
                 <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-                    <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl border-[3px] border-neutral-300 dark:border-neutral-800 w-full max-w-sm p-6 flex flex-col gap-4">
+                    <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl border border-black dark:border-neutral-600 w-full max-w-sm p-6 flex flex-col gap-4">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center shrink-0">
                                 <Trash2 className="w-5 h-5 text-red-600 dark:text-red-400" />
                             </div>
                             <div>
-                                <h3 className="font-bold text-neutral-900 dark:text-white">Delete Artwork</h3>
-                                <p className="text-sm text-neutral-500 dark:text-neutral-400">This action cannot be undone.</p>
+                                <h3 className="font-bold text-black dark:text-white">Delete Artwork</h3>
+                                <p className="text-sm text-black dark:text-black">This action cannot be undone.</p>
                             </div>
                         </div>
-                        <p className="text-sm text-neutral-600 dark:text-neutral-300">
+                        <p className="text-sm text-black dark:text-neutral-300">
                             Are you sure you want to delete <span className="font-semibold">"{artwork.title}"</span>? It will be permanently removed from the gallery.
                         </p>
                         <div className="flex gap-3 mt-1">
                             <button
                                 onClick={() => setShowDeleteModal(false)}
                                 disabled={deleting}
-                                className="flex-1 rounded-lg border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 font-medium py-2.5 text-sm hover:bg-neutral-50 dark:hover:bg-neutral-800 transition disabled:opacity-50"
+                                className="flex-1 rounded-lg border border-neutral-200 dark:border-neutral-700 text-black dark:text-black font-medium py-2.5 text-sm hover:bg-neutral-50 dark:hover:bg-neutral-800 transition disabled:opacity-50"
                             >
                                 Cancel
                             </button>

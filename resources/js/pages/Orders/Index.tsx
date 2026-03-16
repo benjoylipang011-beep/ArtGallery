@@ -108,7 +108,7 @@ function OrderTracker({ order }: { order: Order }) {
                             w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-all
                             ${done
                                 ? 'bg-amber-500 text-white shadow-[0_0_10px_rgba(245,158,11,0.4)]'
-                                : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-400 dark:text-neutral-600 border-2 border-neutral-200 dark:border-neutral-700'}
+                                : 'bg-neutral-100 dark:bg-neutral-800 text-black dark:text-black border-2 border-neutral-200 dark:border-neutral-700'}
                             ${active ? 'ring-2 ring-amber-400/40 ring-offset-2 ring-offset-white dark:ring-offset-neutral-900' : ''}
                         `}>
                             {done && !active
@@ -119,18 +119,18 @@ function OrderTracker({ order }: { order: Order }) {
                         {/* Label */}
                         <p className={`text-[10px] font-semibold text-center leading-tight
                             ${active  ? 'text-amber-600 dark:text-amber-400' :
-                              done    ? 'text-neutral-700 dark:text-neutral-300' :
-                                        'text-neutral-400 dark:text-neutral-600'}`}>
+                              done    ? 'text-black dark:text-neutral-300' :
+                                        'text-black dark:text-black'}`}>
                             {label}
                         </p>
 
                         {/* Timestamp */}
                         {ts && done ? (
-                            <p className="text-[9px] text-neutral-400 dark:text-neutral-500 text-center leading-tight">
+                            <p className="text-[9px] text-black dark:text-black text-center leading-tight">
                                 {formatTs(ts)}
                             </p>
                         ) : (
-                            <p className="text-[9px] text-neutral-300 dark:text-neutral-700 text-center">
+                            <p className="text-[9px] text-neutral-300 dark:text-black text-center">
                                 {done ? '' : '—'}
                             </p>
                         )}
@@ -150,11 +150,11 @@ export default function OrdersPage({ orders }: Props) {
 
                 <div className="flex items-center gap-3">
                     <PackageCheck className="w-6 h-6 text-amber-500" />
-                    <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">My Orders</h1>
+                    <h1 className="text-2xl font-bold text-black dark:text-white">My Orders</h1>
                 </div>
 
                 {orders.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-24 gap-4 text-neutral-400">
+                    <div className="flex flex-col items-center justify-center py-24 gap-4 text-black">
                         <PackageOpen className="w-16 h-16 opacity-30" strokeWidth={1} />
                         <p className="text-lg font-medium">No orders yet</p>
                         <Link
@@ -167,13 +167,13 @@ export default function OrdersPage({ orders }: Props) {
                 ) : (
                     <div className="flex flex-col gap-4">
                         {orders.map((order) => (
-                            <div key={order.id} className="rounded-xl border-[3px] border-neutral-300 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden">
+                            <div key={order.id} className="rounded-xl border border-black dark:border-neutral-600 bg-white dark:bg-neutral-900 overflow-hidden">
 
                                 {/* Order header */}
                                 <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
                                     <div>
-                                        <p className="text-xs text-neutral-400">Order #{order.id}</p>
-                                        <p className="text-xs text-neutral-400 mt-0.5">
+                                        <p className="text-xs text-black">Order #{order.id}</p>
+                                        <p className="text-xs text-black mt-0.5">
                                             {new Date(order.created_at).toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' })}
                                         </p>
                                     </div>
@@ -215,8 +215,8 @@ export default function OrdersPage({ orders }: Props) {
                                                 )}
                                             </div>
                                             <div className="flex-1 min-w-0">
-                                                <p className="text-sm font-medium text-neutral-900 dark:text-white truncate">{item.artwork.title}</p>
-                                                <p className="text-xs text-neutral-500 dark:text-neutral-400">{item.artwork.artist}</p>
+                                                <p className="text-sm font-medium text-black dark:text-white truncate">{item.artwork.title}</p>
+                                                <p className="text-xs text-black dark:text-black">{item.artwork.artist}</p>
                                             </div>
                                             <span className="text-sm font-semibold text-amber-600 dark:text-amber-400">
                                                 ₱{Number(item.price).toLocaleString()}
@@ -226,7 +226,7 @@ export default function OrdersPage({ orders }: Props) {
                                 </div>
 
                                 {/* Delivery info */}
-                                <div className="px-5 py-3 bg-neutral-50 dark:bg-neutral-800/50 border-t border-neutral-100 dark:border-neutral-800 flex flex-wrap gap-x-6 gap-y-1 text-xs text-neutral-500 dark:text-neutral-400">
+                                <div className="px-5 py-3 bg-neutral-50 dark:bg-neutral-800/50 border-t border-neutral-100 dark:border-neutral-800 flex flex-wrap gap-x-6 gap-y-1 text-xs text-black dark:text-black">
                                     <span>📦 {order.full_name} · {order.phone}</span>
                                     <span>📍 {order.address}</span>
                                     <span>💳 {order.payment_method === 'cash_on_delivery' ? 'Cash on Delivery' : 'GCash'}</span>

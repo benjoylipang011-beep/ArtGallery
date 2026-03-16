@@ -97,24 +97,31 @@ function StatCard({
   label,
   value,
   sub,
-  accent,
+  blobColor,
+  iconColor,
   icon,
 }: {
   label: string;
   value: string;
   sub: string;
-  accent: string;
+  blobColor: string;
+  iconColor: string;
   icon: React.ReactNode;
 }) {
   return (
-    <div className="relative overflow-hidden rounded-xl border-[3px] border-neutral-300 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4 sm:p-5 flex flex-col gap-1.5 sm:gap-2">
-      <div className={`absolute top-0 right-0 w-16 h-16 sm:w-20 sm:h-20 rounded-bl-full opacity-10 ${accent}`} />
-      <div className="flex items-center justify-between">
-        <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-widest text-neutral-400 leading-tight pr-2">{label}</span>
-        <span className="text-neutral-500 shrink-0">{icon}</span>
+    <div className="relative overflow-hidden rounded-2xl border border-black dark:border-neutral-600 bg-white dark:bg-neutral-900 p-4 sm:p-5 flex flex-col gap-2">
+      {/* Pastel blob top-right, half off the card */}
+      <div
+        className={`absolute -top-8 -right-8 w-28 h-28 sm:w-32 sm:h-32 rounded-full ${blobColor}`}
+      />
+      {/* Icon centered in visible part of blob */}
+      <div className={`absolute top-4 right-4 ${iconColor}`}>
+        {icon}
       </div>
-      <span className="text-2xl sm:text-3xl font-bold text-neutral-900 dark:text-white tracking-tight leading-none">{value}</span>
-      <span className="text-[10px] sm:text-xs text-neutral-500 dark:text-neutral-400">{sub}</span>
+      {/* Label top-left */}
+      <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-widest text-black dark:text-neutral-400 leading-tight pr-16">{label}</span>
+      <span className="text-2xl sm:text-3xl font-bold text-black dark:text-white tracking-tight leading-none">{value}</span>
+      <span className="text-[10px] sm:text-xs text-black dark:text-neutral-400">{sub}</span>
     </div>
   );
 }
@@ -354,7 +361,7 @@ function ArtworkCard({
 }) {
   const grad = GRADIENTS[index % GRADIENTS.length];
   return (
-    <div className="rounded-xl border-[3px] border-neutral-300 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden flex flex-col hover:shadow-lg transition-shadow duration-200">
+    <div className="rounded-2xl border border-black dark:border-neutral-600 bg-white dark:bg-neutral-900 overflow-hidden flex flex-col hover:shadow-lg transition-shadow duration-200">
       {/* Image area: shorter on mobile, taller on sm+ */}
       <div className={`h-36 sm:h-44 relative flex items-end justify-between p-2 sm:p-3 ${!artwork.image ? grad : ''}`}>
         {artwork.image && (
@@ -487,7 +494,7 @@ function SavedAllModal({ artworks, onRemove, onClose }: {
   return (
     <div className="fixed inset-0 z-[999] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm">
       {/* Bottom sheet on mobile, centered modal on sm+ */}
-      <div className="bg-white dark:bg-neutral-900 rounded-t-2xl sm:rounded-2xl shadow-2xl border-[3px] border-neutral-300 dark:border-neutral-800 w-full sm:max-w-md flex flex-col max-h-[85vh] sm:max-h-[80vh]">
+      <div className="bg-white dark:bg-neutral-900 rounded-t-2xl sm:rounded-2xl shadow-2xl border border-black dark:border-neutral-600 w-full sm:max-w-md flex flex-col max-h-[85vh] sm:max-h-[80vh]">
         {/* Drag handle (mobile only) */}
         <div className="flex justify-center pt-3 pb-1 sm:hidden">
           <div className="w-10 h-1 rounded-full bg-neutral-200 dark:bg-neutral-700" />
@@ -679,28 +686,32 @@ export default function Dashboard() {
             label="Gallery Artworks"
             value={stats.totalArtworks.toLocaleString()}
             sub="Total in the gallery"
-            accent="bg-amber-400"
+            blobColor="bg-yellow-100"
+            iconColor="text-yellow-500"
             icon={<ImageIcon className="w-4 h-4 sm:w-5 sm:h-5" />}
           />
           <StatCard
             label="My Artworks"
             value={stats.myArtworks.toLocaleString()}
             sub="Uploaded by you"
-            accent="bg-sky-400"
+            blobColor="bg-sky-100"
+            iconColor="text-sky-500"
             icon={<PenTool className="w-4 h-4 sm:w-5 sm:h-5" />}
           />
           <StatCard
             label="My Cart"
             value={stats.myCartCount.toLocaleString()}
             sub="Items in your cart"
-            accent="bg-emerald-400"
+            blobColor="bg-emerald-100"
+            iconColor="text-emerald-500"
             icon={<ShoppingCart className="w-4 h-4 sm:w-5 sm:h-5" />}
           />
           <StatCard
             label="My Orders"
             value={stats.myOrders.toLocaleString()}
             sub={`${stats.myPendingOrders} pending`}
-            accent="bg-rose-400"
+            blobColor="bg-rose-100"
+            iconColor="text-rose-400"
             icon={<Package className="w-4 h-4 sm:w-5 sm:h-5" />}
           />
         </div>
@@ -711,28 +722,32 @@ export default function Dashboard() {
             label="Saved by You"
             value={stats.savedCount.toLocaleString()}
             sub="Your wishlist"
-            accent="bg-rose-400"
-            icon={<Heart className="w-4 h-4 sm:w-5 sm:h-5 fill-rose-500 text-rose-500" />}
+            blobColor="bg-rose-100"
+            iconColor="text-rose-500"
+            icon={<Heart className="w-4 h-4 sm:w-5 sm:h-5 fill-rose-500" />}
           />
           <StatCard
             label="Live Exhibitions"
             value={stats.liveExhibitions.toLocaleString()}
             sub="Open for viewing"
-            accent="bg-purple-400"
+            blobColor="bg-purple-100"
+            iconColor="text-purple-500"
             icon={<Building2 className="w-4 h-4 sm:w-5 sm:h-5" />}
           />
           <StatCard
             label="My Revenue"
             value={formatPrice(stats.myRevenue)}
             sub="From your paid orders"
-            accent="bg-green-400"
+            blobColor="bg-green-100"
+            iconColor="text-green-600"
             icon={<Wallet className="w-4 h-4 sm:w-5 sm:h-5" />}
           />
           <StatCard
             label="Pending Orders"
             value={stats.myPendingOrders.toLocaleString()}
             sub="Awaiting confirmation"
-            accent="bg-blue-400"
+            blobColor="bg-blue-100"
+            iconColor="text-blue-500"
             icon={<Clock className="w-4 h-4 sm:w-5 sm:h-5" />}
           />
         </div>
@@ -740,13 +755,13 @@ export default function Dashboard() {
         {/* ── PRIMARY ANALYTICS – Monthly Added & Status Distribution ── */}
         {analytics && (
           <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-2">
-            <div className="rounded-xl border-[3px] border-neutral-300 dark:border-neutral-800 bg-white p-4 sm:p-5 dark:bg-neutral-900">
+            <div className="rounded-2xl border border-black dark:border-neutral-600 bg-white p-4 sm:p-5 dark:bg-neutral-900">
               <h3 className="mb-4 text-xs font-semibold uppercase tracking-widest text-neutral-400">
                 My Artworks Added per Month
               </h3>
               <LineAreaChart data={analytics.monthlyArtworks} />
             </div>
-            <div className="rounded-xl border-[3px] border-neutral-300 dark:border-neutral-800 bg-white p-4 sm:p-5 dark:bg-neutral-900">
+            <div className="rounded-2xl border border-black dark:border-neutral-600 bg-white p-4 sm:p-5 dark:bg-neutral-900">
               <h3 className="mb-4 text-xs font-semibold uppercase tracking-widest text-neutral-400">
                 Artworks by Status
               </h3>
@@ -757,7 +772,7 @@ export default function Dashboard() {
 
         {/* ── SECONDARY ANALYTICS – Category & Medium (collapsible) ── */}
         {analytics && (
-          <details className="group rounded-xl border-[3px] border-neutral-300 dark:border-neutral-800 bg-white dark:bg-neutral-900">
+          <details className="group rounded-2xl border border-black dark:border-neutral-600 bg-white dark:bg-neutral-900">
             <summary className="flex cursor-pointer list-none items-center justify-between p-4 sm:p-5 text-sm font-medium text-neutral-600 dark:text-neutral-300">
               <span>More analytics (Category &amp; Medium)</span>
               <ChevronDown className="w-4 h-4 transition-transform group-open:rotate-180 shrink-0" />
@@ -771,7 +786,7 @@ export default function Dashboard() {
 
         {/* ── Top Artworks ── */}
         {analytics && analytics.topArtworks.length > 0 && (
-          <div className="rounded-xl border-[3px] border-neutral-300 dark:border-neutral-800 bg-white p-4 sm:p-5 dark:bg-neutral-900">
+          <div className="rounded-2xl border border-black dark:border-neutral-600 bg-white p-4 sm:p-5 dark:bg-neutral-900">
             <h3 className="mb-4 text-xs font-semibold uppercase tracking-widest text-neutral-400">
               My Top 5 Artworks by Price
             </h3>
@@ -812,7 +827,7 @@ export default function Dashboard() {
         <div className="grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-3">
 
           {/* Browse Artworks */}
-          <div className="md:col-span-2 rounded-xl border-[3px] border-neutral-300 dark:border-neutral-800 bg-white p-4 sm:p-5 dark:bg-neutral-900">
+          <div className="md:col-span-2 rounded-2xl border border-black dark:border-neutral-600 bg-white p-4 sm:p-5 dark:bg-neutral-900">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xs sm:text-sm font-semibold uppercase tracking-widest text-neutral-500 dark:text-neutral-400">
                 Browse Artworks
@@ -833,7 +848,7 @@ export default function Dashboard() {
           </div>
 
           {/* Saved Artworks */}
-          <div className="rounded-xl border-[3px] border-neutral-300 dark:border-neutral-800 bg-white p-4 sm:p-5 dark:bg-neutral-900 flex flex-col min-w-0 self-start">
+          <div className="rounded-2xl border border-black dark:border-neutral-600 bg-white p-4 sm:p-5 dark:bg-neutral-900 flex flex-col min-w-0 self-start">
             {/* Header */}
             <div className="flex items-center justify-between mb-3 sm:mb-4 shrink-0">
               <h2 className="text-xs sm:text-sm font-semibold uppercase tracking-widest text-neutral-500 dark:text-neutral-400">
@@ -911,7 +926,7 @@ export default function Dashboard() {
         </div>
 
         {/* ── Exhibitions Table ── */}
-        <div className="rounded-xl border-[3px] border-neutral-300 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-4 sm:p-5">
+        <div className="rounded-2xl border border-black dark:border-neutral-600 bg-white dark:bg-neutral-900 p-4 sm:p-5">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xs sm:text-sm font-semibold uppercase tracking-widest text-neutral-500 dark:text-neutral-400">
               Exhibitions

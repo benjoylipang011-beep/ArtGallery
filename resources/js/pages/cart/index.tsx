@@ -90,12 +90,12 @@ export default function CartIndex({ cartItems, total }: Props) {
                 {/* Header */}
                 <div className="flex items-center gap-3">
                     <ShoppingCart className="w-6 h-6 text-amber-500" />
-                    <h1 className="text-2xl font-bold text-neutral-900 dark:text-white">My Cart</h1>
-                    <span className="text-sm text-neutral-400">({cartItems.length} item{cartItems.length !== 1 ? 's' : ''})</span>
+                    <h1 className="text-2xl font-bold text-black dark:text-white">My Cart</h1>
+                    <span className="text-sm text-black">({cartItems.length} item{cartItems.length !== 1 ? 's' : ''})</span>
                 </div>
 
                 {cartItems.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-24 gap-4 text-neutral-400">
+                    <div className="flex flex-col items-center justify-center py-24 gap-4 text-black">
                         <PackageOpen className="w-16 h-16 opacity-30" strokeWidth={1} />
                         <p className="text-lg font-medium">Your cart is empty</p>
                         <Link
@@ -114,10 +114,10 @@ export default function CartIndex({ cartItems, total }: Props) {
                                 <div
                                     key={item.id}
                                     onClick={() => toggleItem(item.artwork_id)}
-                                    className={`flex gap-4 p-4 rounded-xl border-[3px] cursor-pointer transition-all duration-150 bg-white dark:bg-neutral-900 ${
+                                    className={`flex gap-4 p-4 rounded-xl border cursor-pointer transition-all duration-150 bg-white dark:bg-neutral-900 ${
                                         selectedIds.has(item.artwork_id)
-                                            ? 'border-white dark:border-white shadow-[0_0_0_1px_rgba(255,255,255,0.15)] scale-[1.01]'
-                                            : 'border-neutral-300 dark:border-neutral-800 hover:border-neutral-400 dark:hover:border-neutral-600'
+                                            ? 'border-gray-300 dark:border-neutral-600 scale-[1.01]'
+                                            : 'border-black dark:border-neutral-600'
                                     }`}
                                 >
                                     {/* Image */}
@@ -136,21 +136,21 @@ export default function CartIndex({ cartItems, total }: Props) {
                                     {/* Info */}
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-2">
-                                            <p className="font-semibold text-neutral-900 dark:text-white truncate">{item.artwork.title}</p>
+                                            <p className="font-semibold text-black dark:text-white truncate">{item.artwork.title}</p>
                                             {selectedIds.has(item.artwork_id) && (
                                                 <span className="shrink-0 text-xs font-medium px-2 py-0.5 rounded-full bg-white/10 border border-white/30 text-white">
                                                     ✓ Selected
                                                 </span>
                                             )}
                                         </div>
-                                        <p className="text-sm text-neutral-500 dark:text-neutral-400">{item.artwork.artist}</p>
+                                        <p className="text-sm text-black dark:text-black">{item.artwork.artist}</p>
                                         {(item.artwork.medium || item.artwork.year) && (
-                                            <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-0.5">
+                                            <p className="text-xs text-black dark:text-black mt-0.5">
                                                 {[item.artwork.medium, item.artwork.year].filter(Boolean).join(' · ')}
                                             </p>
                                         )}
                                         {item.artwork.description && (
-                                            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1 line-clamp-2 leading-relaxed">
+                                            <p className="text-xs text-black dark:text-black mt-1 line-clamp-2 leading-relaxed">
                                                 {item.artwork.description}
                                             </p>
                                         )}
@@ -163,7 +163,7 @@ export default function CartIndex({ cartItems, total }: Props) {
                                     <button
                                         onClick={(e) => { e.stopPropagation(); handleRemove(item.artwork_id); }}
                                         disabled={removingId === item.artwork_id}
-                                        className="shrink-0 self-center p-2 rounded-lg text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-40"
+                                        className="shrink-0 self-center p-2 rounded-lg text-black hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-40"
                                         title="Remove from cart"
                                     >
                                         {removingId === item.artwork_id ? (
@@ -181,9 +181,9 @@ export default function CartIndex({ cartItems, total }: Props) {
 
                         {/* Order summary */}
                         <div className="md:col-span-1">
-                            <div className="rounded-xl border-[3px] border-neutral-300 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-5 sticky top-4">
+                            <div className="rounded-xl border border-black dark:border-neutral-600 bg-white dark:bg-neutral-900 p-5 sticky top-4">
                                 <div className="flex items-center justify-between mb-4">
-                                    <h2 className="font-semibold text-neutral-900 dark:text-white">Order Summary</h2>
+                                    <h2 className="font-semibold text-black dark:text-white">Order Summary</h2>
                                     <button
                                         onClick={toggleAll}
                                         className="text-xs text-amber-500 hover:text-amber-600 font-medium transition-colors"
@@ -201,8 +201,8 @@ export default function CartIndex({ cartItems, total }: Props) {
                                                 selectedIds.has(item.artwork_id)
                                                     ? 'text-white font-semibold'
                                                     : selectedIds.size > 0
-                                                        ? 'text-neutral-500 dark:text-neutral-600 opacity-50'
-                                                        : 'text-neutral-600 dark:text-neutral-400'
+                                                        ? 'text-black dark:text-black opacity-50'
+                                                        : 'text-black dark:text-black'
                                             }`}
                                         >
                                             <span className="truncate mr-2 flex items-center gap-1">
@@ -217,16 +217,16 @@ export default function CartIndex({ cartItems, total }: Props) {
                                     ))}
                                 </div>
 
-                                <div className="mt-4 pt-4 border-t border-neutral-100 dark:border-neutral-800 flex justify-between font-bold text-neutral-900 dark:text-white">
+                                <div className="mt-4 pt-4 border-t border-neutral-100 dark:border-neutral-800 flex justify-between font-bold text-black dark:text-white">
                                     <span>
                                         {selectedIds.size > 0 ? `Selected (${selectedIds.size})` : 'Total'}
                                     </span>
                                     <span className="text-amber-600 dark:text-amber-400">
-                                        ₱{(selectedIds.size > 0 ? selectedTotal : Number(total)).toLocaleString()}
+                                        ₱{(selectedIds.size > 0 ? selectedTotal : 0).toLocaleString()}
                                     </span>
                                 </div>
                                 {selectedIds.size > 0 && (
-                                    <p className="text-xs text-neutral-400 mt-1 text-right">
+                                    <p className="text-xs text-black mt-1 text-right">
                                         {selectedIds.size} of {cartItems.length} items selected
                                     </p>
                                 )}
@@ -252,7 +252,7 @@ export default function CartIndex({ cartItems, total }: Props) {
 
                                 <Link
                                     href="/products"
-                                    className="mt-2 w-full flex items-center justify-center px-4 py-2.5 rounded-lg border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-400 text-sm hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
+                                    className="mt-2 w-full flex items-center justify-center px-4 py-2.5 rounded-lg border border-neutral-200 dark:border-neutral-700 text-black dark:text-black text-sm hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
                                 >
                                     Continue Shopping
                                 </Link>

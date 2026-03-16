@@ -138,12 +138,17 @@
 }
 
 @layer base {
-    * {
-        @apply border-border;
+    html {
+        direction: rtl;
     }
 
     body {
+        direction: ltr;
         @apply bg-background text-foreground;
+    }
+
+    * {
+        @apply border-border;
     }
 }
 
