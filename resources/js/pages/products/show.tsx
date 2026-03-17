@@ -2,7 +2,7 @@ import { Head, Link, router, usePage } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 import { useState } from 'react';
-import { ArrowLeft, Trash2, Calendar, Ruler, Tag, Palette, User, FileText, ShoppingCart, Zap } from 'lucide-react';
+import { ArrowLeft, Trash2, Calendar, Ruler, Tag, Palette, User, FileText, ShoppingCart, Zap, PackageCheck, Clock, MapPin, Phone, CreditCard, CheckCheck, Truck, Home } from 'lucide-react';
 
 interface Artwork {
     id: number;
@@ -20,10 +20,22 @@ interface Artwork {
     user_id: number;
 }
 
+interface PendingOrder {
+    id: number;
+    status: string;
+    buyer_name: string;
+    phone: string;
+    address: string;
+    payment_method: string;
+    total: string;
+    created_at: string;
+}
+
 interface Props {
     artwork: Artwork;
     authUserId: number;
     inCart: boolean;
+    pendingOrder?: PendingOrder | null;
 }
 
 const gradients = [
@@ -37,15 +49,54 @@ const gradients = [
     'bg-gradient-to-br from-green-400 to-emerald-700',
 ];
 
-export default function ShowArtwork({ artwork, authUserId, inCart }: Props) {
+export default function ShowArtwork({ artwork, authUserId, inCart, pendingOrder }: Props) {
     const [showDeleteModal, setShowDeleteModal] = useState(false);
-    const [deleting, setDeleting] = useState(false);
-    const [addingToCart, setAddingToCart] = useState(false);
+    const [deleting, setDeleting]               = useState(false);
+    const [addingToCart, setAddingToCart]       = useState(false);
+    const [accepting, setAccepting]               = useState(false);
+    const [declining, setDeclining]               = useState(false);
+    const [shipping, setShipping]                 = useState(false);
+    const [delivering, setDelivering]             = useState(false);
+    const [showDeclineModal, setShowDeclineModal] = useState(false);
     const { auth } = usePage().props as any;
     const resolvedAuthId = authUserId ?? auth?.user?.id;
-    const isOwner = Number(artwork.user_id) === Number(resolvedAuthId);
+    const isOwner     = Number(artwork.user_id) === Number(resolvedAuthId);
     const isAvailable = artwork.status === 'available';
-    const gradient = gradients[artwork.id % gradients.length];
+    const isReserved  = artwork.status === 'reserved';
+    const gradient    = gradients[artwork.id % gradients.length];
+
+    const handleAcceptOrder = () => {
+        if (!pendingOrder) return;
+        setAccepting(true);
+        router.patch(`/orders/${pendingOrder.id}/accept`, {}, {
+            onFinish: () => setAccepting(false),
+        });
+    };
+
+    const handleDeclineOrder = () => {
+        if (!pendingOrder) return;
+        setDeclining(true);
+        router.patch(`/orders/${pendingOrder.id}/decline`, {}, {
+            onSuccess: () => setShowDeclineModal(false),
+            onFinish:  () => setDeclining(false),
+        });
+    };
+
+    const handleShipOrder = () => {
+        if (!pendingOrder) return;
+        setShipping(true);
+        router.patch(`/orders/${pendingOrder.id}/ship`, {}, {
+            onFinish: () => setShipping(false),
+        });
+    };
+
+    const handleDeliverOrder = () => {
+        if (!pendingOrder) return;
+        setDelivering(true);
+        router.patch(`/orders/${pendingOrder.id}/deliver`, {}, {
+            onFinish: () => setDelivering(false),
+        });
+    };
 
     const handleAddToCart = () => {
         setAddingToCart(true);
@@ -160,6 +211,128 @@ export default function ShowArtwork({ artwork, authUserId, inCart }: Props) {
                                 <span className="text-2xl font-bold text-amber-600 dark:text-amber-400">
                                     {Number(artwork.price).toLocaleString()}
                                 </span>
+                            </div>
+                        )}
+
+                        {/* ── Order management panel — visible to owner only ── */}
+                        {isOwner && isReserved && pendingOrder && (
+                            <div className={`rounded-xl border-2 p-5 flex flex-col gap-4 ${
+                                pendingOrder.status === 'pending'   ? 'border-amber-400 bg-amber-50 dark:bg-amber-900/10' :
+                                pendingOrder.status === 'confirmed' ? 'border-blue-400 bg-blue-50 dark:bg-blue-900/10' :
+                                pendingOrder.status === 'shipped'   ? 'border-violet-400 bg-violet-50 dark:bg-violet-900/10' :
+                                'border-amber-400 bg-amber-50 dark:bg-amber-900/10'
+                            }`}>
+                                {/* Header */}
+                                <div className="flex items-center gap-2">
+                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
+                                        pendingOrder.status === 'pending'   ? 'bg-amber-400' :
+                                        pendingOrder.status === 'confirmed' ? 'bg-blue-500' :
+                                        'bg-violet-500'
+                                    }`}>
+                                        {pendingOrder.status === 'shipped'
+                                            ? <Truck className="w-4 h-4 text-white" />
+                                            : <PackageCheck className="w-4 h-4 text-white" />}
+                                    </div>
+                                    <div>
+                                        <p className={`font-bold text-sm ${
+                                            pendingOrder.status === 'pending'   ? 'text-amber-700 dark:text-amber-400' :
+                                            pendingOrder.status === 'confirmed' ? 'text-blue-700 dark:text-blue-400' :
+                                            'text-violet-700 dark:text-violet-400'
+                                        }`}>
+                                            {pendingOrder.status === 'pending'   ? 'New Order Received!' :
+                                             pendingOrder.status === 'confirmed' ? 'Order Confirmed — Ready to Ship' :
+                                             'Order Shipped — Mark as Delivered?'}
+                                        </p>
+                                        <p className="text-xs text-black/50 dark:text-white/40">
+                                            Order #{pendingOrder.id} · {new Date(pendingOrder.created_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                        </p>
+                                    </div>
+                                    <span className="ml-auto text-lg font-bold text-black dark:text-white">
+                                        ₱{Number(pendingOrder.total).toLocaleString()}
+                                    </span>
+                                </div>
+
+                                {/* Buyer details */}
+                                <div className="rounded-lg bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 p-4 flex flex-col gap-2">
+                                    <p className="text-xs font-semibold uppercase tracking-widest text-black/40 dark:text-white/40 mb-1">Buyer Details</p>
+                                    <div className="flex items-center gap-2 text-sm text-black dark:text-white">
+                                        <User className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                                        <span className="font-medium">{pendingOrder.buyer_name}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-sm text-black dark:text-neutral-300">
+                                        <Phone className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                                        <span>{pendingOrder.phone}</span>
+                                    </div>
+                                    <div className="flex items-start gap-2 text-sm text-black dark:text-neutral-300">
+                                        <MapPin className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
+                                        <span>{pendingOrder.address}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-sm text-black dark:text-neutral-300">
+                                        <CreditCard className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                                        <span>{pendingOrder.payment_method === 'cash_on_delivery' ? 'Cash on Delivery' : 'GCash'}</span>
+                                    </div>
+                                </div>
+
+                                {/* ── Action buttons by status ── */}
+
+                                {/* PENDING: Accept / Decline */}
+                                {pendingOrder.status === 'pending' && (
+                                    <div className="flex gap-3">
+                                        <button
+                                            onClick={handleAcceptOrder}
+                                            disabled={accepting}
+                                            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-green-600 hover:bg-green-700 disabled:opacity-60 text-white font-semibold text-sm transition-colors"
+                                        >
+                                            {accepting
+                                                ? <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+                                                : <CheckCheck className="w-4 h-4" />}
+                                            Accept Order
+                                        </button>
+                                        <button
+                                            onClick={() => setShowDeclineModal(true)}
+                                            disabled={declining}
+                                            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 disabled:opacity-60 text-red-600 dark:text-red-400 border border-red-500/30 font-semibold text-sm transition-colors"
+                                        >
+                                            Decline
+                                        </button>
+                                    </div>
+                                )}
+
+                                {/* CONFIRMED: Mark as Shipped */}
+                                {pendingOrder.status === 'confirmed' && (
+                                    <button
+                                        onClick={handleShipOrder}
+                                        disabled={shipping}
+                                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white font-semibold text-sm transition-colors"
+                                    >
+                                        {shipping
+                                            ? <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+                                            : <Truck className="w-4 h-4" />}
+                                        Mark as Shipped
+                                    </button>
+                                )}
+
+                                {/* SHIPPED: Mark as Delivered */}
+                                {pendingOrder.status === 'shipped' && (
+                                    <button
+                                        onClick={handleDeliverOrder}
+                                        disabled={delivering}
+                                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-green-600 hover:bg-green-700 disabled:opacity-60 text-white font-semibold text-sm transition-colors"
+                                    >
+                                        {delivering
+                                            ? <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+                                            : <Home className="w-4 h-4" />}
+                                        Mark as Delivered
+                                    </button>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Owner sees reserved with no active order (edge case) */}
+                        {isOwner && isReserved && !pendingOrder && (
+                            <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-yellow-500/10 border border-yellow-500/30 text-yellow-600 dark:text-yellow-400 text-sm font-medium">
+                                <Clock className="w-4 h-4 shrink-0" />
+                                This artwork has a pending order.
                             </div>
                         )}
 
@@ -308,6 +481,47 @@ export default function ShowArtwork({ artwork, authUserId, inCart }: Props) {
                                         Delete
                                     </>
                                 )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {/* ── Decline confirmation modal ── */}
+            {showDeclineModal && pendingOrder && (
+                <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                    <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl border border-black dark:border-neutral-600 w-full max-w-sm p-6 flex flex-col gap-4">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center shrink-0">
+                                <Trash2 className="w-5 h-5 text-red-600 dark:text-red-400" />
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-black dark:text-white">Decline Order?</h3>
+                                <p className="text-sm text-black/60 dark:text-neutral-400">Order #{pendingOrder.id}</p>
+                            </div>
+                        </div>
+                        <p className="text-sm text-black dark:text-neutral-300">
+                            Declining will cancel this order and mark the artwork as <span className="font-semibold">available</span> again.
+                        </p>
+                        <div className="flex gap-3 mt-1">
+                            <button
+                                onClick={() => setShowDeclineModal(false)}
+                                disabled={declining}
+                                className="flex-1 rounded-lg border border-neutral-200 dark:border-neutral-700 text-black dark:text-white font-medium py-2.5 text-sm hover:bg-neutral-50 dark:hover:bg-neutral-800 transition disabled:opacity-50"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleDeclineOrder}
+                                disabled={declining}
+                                className="flex-1 rounded-lg bg-red-600 hover:bg-red-700 text-white font-semibold py-2.5 text-sm transition flex items-center justify-center gap-2 disabled:opacity-60"
+                            >
+                                {declining ? (
+                                    <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                                    </svg>
+                                ) : null}
+                                Yes, Decline
                             </button>
                         </div>
                     </div>

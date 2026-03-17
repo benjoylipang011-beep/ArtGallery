@@ -258,10 +258,7 @@ function PieChart({ data, title }: { data: ChartItem[]; title?: string }) {
     );
 
   const total = data.reduce((s, d) => s + d.count, 0);
-  const cx = 80,
-    cy = 80,
-    r = 68,
-    innerR = 36;
+  const cx = 100, cy = 100, r = 88, innerR = 46;
   let angle = -Math.PI / 2;
 
   const slices = data.map((d, i) => {
@@ -269,14 +266,10 @@ function PieChart({ data, title }: { data: ChartItem[]; title?: string }) {
     const startAngle = angle;
     angle += pct * 2 * Math.PI;
     const endAngle = angle;
-    const x1 = cx + r * Math.cos(startAngle),
-      y1 = cy + r * Math.sin(startAngle);
-    const x2 = cx + r * Math.cos(endAngle),
-      y2 = cy + r * Math.sin(endAngle);
-    const ix1 = cx + innerR * Math.cos(endAngle),
-      iy1 = cy + innerR * Math.sin(endAngle);
-    const ix2 = cx + innerR * Math.cos(startAngle),
-      iy2 = cy + innerR * Math.sin(startAngle);
+    const x1 = cx + r * Math.cos(startAngle), y1 = cy + r * Math.sin(startAngle);
+    const x2 = cx + r * Math.cos(endAngle),   y2 = cy + r * Math.sin(endAngle);
+    const ix1 = cx + innerR * Math.cos(endAngle),   iy1 = cy + innerR * Math.sin(endAngle);
+    const ix2 = cx + innerR * Math.cos(startAngle), iy2 = cy + innerR * Math.sin(startAngle);
     const large = pct > 0.5 ? 1 : 0;
     const midAngle = startAngle + pct * Math.PI;
     return {
@@ -295,51 +288,68 @@ function PieChart({ data, title }: { data: ChartItem[]; title?: string }) {
   return (
     <div>
       {title && <h3 className="text-xs font-semibold uppercase tracking-widest text-neutral-400 mb-3">{title}</h3>}
-      <div className="flex flex-col xs:flex-row items-center gap-4">
-        <svg viewBox="0 0 160 160" className="shrink-0" style={{ width: 140, height: 140 }}>
+      <div className="flex flex-col sm:flex-row items-center gap-6">
+
+        {/* Donut */}
+        <svg viewBox="0 0 200 200" className="shrink-0" style={{ width: 180, height: 180 }}>
           {slices.map((s, i) => (
             <path
               key={i}
               d={s.d}
               fill={s.color}
-              opacity={hovered === null || hovered === i ? 1 : 0.45}
-              transform={hovered === i ? `translate(${Math.cos(s.midAngle) * 4},${Math.sin(s.midAngle) * 4})` : ''}
+              opacity={hovered === null || hovered === i ? 1 : 0.4}
+              transform={hovered === i ? `translate(${Math.cos(s.midAngle) * 5},${Math.sin(s.midAngle) * 5})` : ''}
               style={{ transition: 'all 0.2s', cursor: 'pointer' }}
               onMouseEnter={() => setHovered(i)}
               onMouseLeave={() => setHovered(null)}
             />
           ))}
+
+          {/* Center text */}
           {hov ? (
             <>
-              <text x={cx} y={cy - 7} textAnchor="middle" fontSize="18" fontWeight="800" fill={hov.color}>
+              <text x={cx} y={cy - 10} textAnchor="middle" fontSize="28" fontWeight="800" fill={hov.color}>
                 {hov.count}
               </text>
-              <text x={cx} y={cy + 9} textAnchor="middle" fontSize="8" fill="#9ca3af">
+              <text x={cx} y={cy + 14} textAnchor="middle" fontSize="13" fill="#9ca3af">
                 {hov.pct}%
+              </text>
+              <text x={cx} y={cy + 30} textAnchor="middle" fontSize="11" fill="#9ca3af">
+                {hov.label}
               </text>
             </>
           ) : (
             <>
-              <text x={cx} y={cy - 5} textAnchor="middle" fontSize="18" fontWeight="800" fill="#374151">
+              <text x={cx} y={cy - 8} textAnchor="middle" fontSize="34" fontWeight="800" fill="#374151" className="dark:fill-white">
                 {total}
               </text>
-              <text x={cx} y={cy + 10} textAnchor="middle" fontSize="8" fill="#9ca3af">
+              <text x={cx} y={cy + 16} textAnchor="middle" fontSize="13" fill="#9ca3af">
                 total
               </text>
             </>
           )}
         </svg>
-        <div className="flex flex-col gap-1.5 min-w-0 w-full">
+
+        {/* Legend */}
+        <div className="flex flex-col gap-3 min-w-0 w-full">
           {slices.map((s, i) => (
             <div
               key={i}
-              className="flex items-center gap-2 cursor-pointer"
+              className="flex items-center gap-3 cursor-pointer group"
               onMouseEnter={() => setHovered(i)}
               onMouseLeave={() => setHovered(null)}
             >
-              <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: s.color }} />
-              <span className="text-xs text-neutral-600 dark:text-neutral-400 truncate">{s.label}</span>
-              <span className="text-xs font-bold text-neutral-800 dark:text-neutral-200 ml-auto pl-2">
+              <span
+                className="w-3 h-3 rounded-full shrink-0 transition-transform group-hover:scale-125"
+                style={{ background: s.color }}
+              />
+              <span className="text-sm text-neutral-600 dark:text-neutral-300 truncate flex-1 capitalize">
+                {s.label}
+              </span>
+              <span className="text-xs text-neutral-400 dark:text-neutral-500 shrink-0">
+                {s.pct}%
+              </span>
+              <span className="text-sm font-bold text-neutral-800 dark:text-neutral-200 shrink-0 w-6 text-right">
                 {s.count}
               </span>
             </div>

@@ -1,7 +1,8 @@
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
-import { PackageCheck, PackageOpen, Clock, Box, Truck, Home, XCircle, CheckCircle2 } from 'lucide-react';
+import { useState } from 'react';
+import { PackageCheck, PackageOpen, Clock, Box, Truck, Home, XCircle, CheckCircle2, Trash2 } from 'lucide-react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'My Orders', href: '/orders' },
@@ -143,6 +144,17 @@ function OrderTracker({ order }: { order: Order }) {
 
 // ── Page ───────────────────────────────────────────────────────
 export default function OrdersPage({ orders }: Props) {
+    const [deletingId, setDeletingId]         = useState<number | null>(null);
+    const [confirmId, setConfirmId]           = useState<number | null>(null);
+
+    const handleDelete = (id: number) => {
+        setDeletingId(id);
+        router.delete(`/orders/${id}`, {
+            onSuccess: () => { setConfirmId(null); setDeletingId(null); },
+            onError:   () => setDeletingId(null),
+        });
+    };
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="My Orders" />
@@ -184,6 +196,17 @@ export default function OrdersPage({ orders }: Props) {
                                         <span className={`text-xs font-semibold px-2.5 py-1 rounded-full capitalize ${statusStyle[order.status] ?? statusStyle.pending}`}>
                                             {order.status}
                                         </span>
+                                        {/* Delete button — only for delivered or cancelled */}
+                                        {(order.status === 'delivered' || order.status === 'cancelled') && (
+                                            <button
+                                                onClick={() => setConfirmId(order.id)}
+                                                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 border border-red-200 dark:border-red-800/40 transition-colors"
+                                                title="Delete order"
+                                            >
+                                                <Trash2 className="w-3.5 h-3.5" />
+                                                Delete
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
 
@@ -237,6 +260,48 @@ export default function OrdersPage({ orders }: Props) {
                     </div>
                 )}
             </div>
+
+            {/* ── Delete confirmation modal ── */}
+            {confirmId !== null && (
+                <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                    <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl border border-black dark:border-neutral-600 w-full max-w-sm p-6 flex flex-col gap-4">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center shrink-0">
+                                <Trash2 className="w-5 h-5 text-red-600 dark:text-red-400" />
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-black dark:text-white">Delete Order?</h3>
+                                <p className="text-sm text-black/50 dark:text-neutral-400">Order #{confirmId}</p>
+                            </div>
+                        </div>
+                        <p className="text-sm text-black dark:text-neutral-300">
+                            This will permanently remove the order from your history. This action cannot be undone.
+                        </p>
+                        <div className="flex gap-3 mt-1">
+                            <button
+                                onClick={() => setConfirmId(null)}
+                                disabled={deletingId !== null}
+                                className="flex-1 rounded-lg border border-neutral-200 dark:border-neutral-700 text-black dark:text-white font-medium py-2.5 text-sm hover:bg-neutral-50 dark:hover:bg-neutral-800 transition disabled:opacity-50"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={() => handleDelete(confirmId)}
+                                disabled={deletingId !== null}
+                                className="flex-1 rounded-lg bg-red-600 hover:bg-red-700 text-white font-semibold py-2.5 text-sm transition flex items-center justify-center gap-2 disabled:opacity-60"
+                            >
+                                {deletingId !== null ? (
+                                    <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                                    </svg>
+                                ) : <Trash2 className="w-4 h-4" />}
+                                Yes, Delete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </AppLayout>
     );
 }

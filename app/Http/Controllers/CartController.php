@@ -6,6 +6,7 @@ use App\Models\CartItem;
 use App\Models\Artwork;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Notifications\ArtworkPurchased;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -154,6 +155,14 @@ class CartController extends Controller
 
                 // Mark artwork as reserved
                 $item->artwork->update(['status' => 'reserved']);
+
+                // Notify the artwork owner (never notify the buyer themselves)
+                $artwork = $item->artwork->loadMissing('user');
+                if ($artwork->user && $artwork->user_id !== Auth::id()) {
+                    $artwork->user->notify(
+                        new ArtworkPurchased(Auth::user(), $artwork, $order->id)
+                    );
+                }
             }
 
             // Only remove the ordered items from cart (not unselected ones)
@@ -228,6 +237,14 @@ class CartController extends Controller
             ]);
 
             $artwork->update(['status' => 'reserved']);
+
+            // Notify the artwork owner (never notify the buyer themselves)
+            $artwork->loadMissing('user');
+            if ($artwork->user && $artwork->user_id !== Auth::id()) {
+                $artwork->user->notify(
+                    new ArtworkPurchased(Auth::user(), $artwork, $order->id)
+                );
+            }
         });
 
         return redirect('/orders')->with('success', 'Order placed successfully!');

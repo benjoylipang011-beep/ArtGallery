@@ -18,6 +18,11 @@ class Artwork extends Model
         'year'  => 'integer',
     ];
 
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
     public function savedByUsers(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'saved_artworks')->withTimestamps();

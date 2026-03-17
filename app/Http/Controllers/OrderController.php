@@ -11,9 +11,6 @@ class OrderController extends Controller
 {
     // ── USER ─────────────────────────────────────────────────────
 
-    /**
-     * Show all orders for the authenticated user.
-     */
     public function index()
     {
         $orders = Order::with('items.artwork')
@@ -29,7 +26,11 @@ class OrderController extends Controller
                 'address'        => $order->address,
                 'payment_method' => $order->payment_method,
                 'tracking_note'  => $order->tracking_note,
-                'created_at'     => $order->created_at->format('M d, Y'),
+                'created_at'     => $order->created_at->toIso8601String(),
+                'confirmed_at'   => $order->confirmed_at?->toIso8601String(),
+                'shipped_at'     => $order->shipped_at?->toIso8601String(),
+                'delivered_at'   => $order->delivered_at?->toIso8601String(),
+                'cancelled_at'   => $order->cancelled_at?->toIso8601String(),
                 'timeline'       => $order->timeline(),
                 'items'          => $order->items->map(fn ($item) => [
                     'id'      => $item->id,
@@ -45,9 +46,6 @@ class OrderController extends Controller
         return Inertia::render('Orders/Index', compact('orders'));
     }
 
-    /**
-     * Show a single order (user must own it).
-     */
     public function show(Order $order)
     {
         abort_if($order->user_id !== Auth::id(), 403);
@@ -61,7 +59,10 @@ class OrderController extends Controller
             'address'        => $order->address,
             'payment_method' => $order->payment_method,
             'tracking_note'  => $order->tracking_note,
-            'created_at'     => $order->created_at->format('M d, Y h:i A'),
+            'created_at'     => $order->created_at->toIso8601String(),
+            'confirmed_at'   => $order->confirmed_at?->toIso8601String(),
+            'shipped_at'     => $order->shipped_at?->toIso8601String(),
+            'delivered_at'   => $order->delivered_at?->toIso8601String(),
             'timeline'       => $order->timeline(),
             'items'          => $order->items->load('artwork')->map(fn ($item) => [
                 'id'      => $item->id,
@@ -79,9 +80,6 @@ class OrderController extends Controller
 
     // ── ADMIN ─────────────────────────────────────────────────────
 
-    /**
-     * Admin: list all orders.
-     */
     public function adminIndex()
     {
         $orders = Order::with('user', 'items.artwork')
@@ -109,9 +107,6 @@ class OrderController extends Controller
         return Inertia::render('Admin/Orders/Index', compact('orders'));
     }
 
-    /**
-     * Admin: update order status.
-     */
     public function updateStatus(Request $request, Order $order)
     {
         $request->validate([
@@ -132,7 +127,6 @@ class OrderController extends Controller
             $updates['tracking_note'] = $request->note;
         }
 
-        // Set the corresponding timestamp if not already set
         if (isset($timestamps[$request->status]) && !$order->{$timestamps[$request->status]}) {
             $updates[$timestamps[$request->status]] = now();
         }
@@ -140,5 +134,120 @@ class OrderController extends Controller
         $order->update($updates);
 
         return back()->with('success', "Order #{$order->id} status updated to {$request->status}.");
+    }
+
+    // ── BUYER ─────────────────────────────────────────────────────
+
+    /**
+     * Buyer deletes a delivered or cancelled order from their history.
+     * Route: DELETE /orders/{order}
+     */
+    public function destroy(Request $request, Order $order)
+    {
+        // Only the buyer (order owner) can delete their own order
+        if ($order->user_id !== $request->user()->id) {
+            abort(403);
+        }
+
+        // Only allow deleting delivered or cancelled orders
+        if (!in_array($order->status, ['delivered', 'cancelled'])) {
+            return back()->with('error', 'Only delivered or cancelled orders can be deleted.');
+        }
+
+        $order->delete();
+
+        return back()->with('success', 'Order removed from your history.');
+    }
+
+    // ── OWNER ─────────────────────────────────────────────────────
+
+    public function accept(Request $request, Order $order)
+    {
+        $artworkOwnerId = $order->items()->with('artwork')->first()?->artwork?->user_id;
+
+        if ($artworkOwnerId !== $request->user()->id) {
+            abort(403);
+        }
+
+        if ($order->status !== 'pending') {
+            return back()->with('error', 'This order cannot be accepted.');
+        }
+
+        $order->update([
+            'status'       => 'confirmed',
+            'confirmed_at' => now(),
+        ]);
+
+        return back()->with('success', 'Order accepted!');
+    }
+
+    public function decline(Request $request, Order $order)
+    {
+        $artworkOwnerId = $order->items()->with('artwork')->first()?->artwork?->user_id;
+
+        if ($artworkOwnerId !== $request->user()->id) {
+            abort(403);
+        }
+
+        if ($order->status !== 'pending') {
+            return back()->with('error', 'This order cannot be declined.');
+        }
+
+        $order->update([
+            'status'       => 'cancelled',
+            'cancelled_at' => now(),
+        ]);
+
+        foreach ($order->items as $item) {
+            $item->artwork?->update(['status' => 'available']);
+        }
+
+        return redirect("/products/{$order->items->first()->artwork_id}")
+            ->with('success', 'Order declined. Artwork is now available again.');
+    }
+
+    public function ship(Request $request, Order $order)
+    {
+        $artworkOwnerId = $order->items()->with('artwork')->first()?->artwork?->user_id;
+
+        if ($artworkOwnerId !== $request->user()->id) {
+            abort(403);
+        }
+
+        if ($order->status !== 'confirmed') {
+            return back()->with('error', 'Order must be confirmed before shipping.');
+        }
+
+        $order->update([
+            'status'    => 'shipped',
+            'shipped_at' => now(),
+        ]);
+
+        return back()->with('success', 'Order marked as shipped!');
+    }
+
+    public function deliver(Request $request, Order $order)
+    {
+        $artworkOwnerId = $order->items()->with('artwork')->first()?->artwork?->user_id;
+
+        if ($artworkOwnerId !== $request->user()->id) {
+            abort(403);
+        }
+
+        if ($order->status !== 'shipped') {
+            return back()->with('error', 'Order must be shipped before marking as delivered.');
+        }
+
+        $order->update([
+            'status'       => 'delivered',
+            'delivered_at' => now(),
+        ]);
+
+        // Mark artwork as sold once delivered
+        foreach ($order->items as $item) {
+            $item->artwork?->update(['status' => 'sold']);
+        }
+
+        return back()->with('success', 'Order marked as delivered!');
     }
 }

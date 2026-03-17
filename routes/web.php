@@ -8,6 +8,7 @@ use App\Http\Controllers\OrderController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\Auth\PasswordResetOtpController;
 use App\Http\Controllers\Auth\SocialAuthController;
 
@@ -78,8 +79,21 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/cart/buy-now',        [CartController::class, 'buyNow'])->name('cart.buy-now');
     Route::post('/cart/buy-now/place', [CartController::class, 'placeBuyNow'])->name('cart.buy-now.place');
 
+    // ── Notifications ─────────────────────────────────────────────────────────
+    Route::get   ('/notifications',           [NotificationController::class, 'index'])      ->name('notifications.index');
+    Route::get   ('/notifications/recent',    [NotificationController::class, 'recent'])     ->name('notifications.recent');
+    Route::post  ('/notifications/read-all',  [NotificationController::class, 'markAllRead'])->name('notifications.read-all');
+    Route::patch ('/notifications/{id}/read', [NotificationController::class, 'markRead'])   ->name('notifications.read');
+    Route::delete('/notifications/{id}',      [NotificationController::class, 'destroy'])    ->name('notifications.destroy');
+
     // ── Orders ────────────────────────────────────────────────────────────────
     Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
+
+    // Owner: accept or decline a pending order
+    Route::patch('/orders/{order}/accept',  [OrderController::class, 'accept']) ->name('orders.accept');
+    Route::patch('/orders/{order}/decline', [OrderController::class, 'decline'])->name('orders.decline');
+    Route::patch('/orders/{order}/ship',    [OrderController::class, 'ship'])   ->name('orders.ship');
+    Route::patch('/orders/{order}/deliver', [OrderController::class, 'deliver'])->name('orders.deliver');
 
     // ── Admin: Order status management ────────────────────────────────────────
     Route::patch('/admin/orders/{order}/status', [OrderController::class, 'updateStatus'])

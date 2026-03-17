@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Artwork;
 use App\Models\CartItem;
 use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\SavedArtwork;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -81,7 +82,9 @@ class DashboardController extends Controller
         // My artworks stats
         $myTotalArtworks = Artwork::where('user_id', $userId)->count();
         $myTotalRevenue  = Schema::hasTable('orders')
-            ? Order::where('user_id', $userId)->where('status', 'paid')->sum('total')
+            ? (float) OrderItem::whereHas('order', fn ($q) => $q->where('status', 'delivered'))
+                ->whereHas('artwork',  fn ($q) => $q->where('user_id', $userId))
+                ->sum('price')
             : 0;
         $myTotalOrders   = Schema::hasTable('orders')
             ? Order::where('user_id', $userId)->count()
@@ -91,6 +94,11 @@ class DashboardController extends Controller
             : 0;
         $myPendingOrders = Schema::hasTable('orders')
             ? Order::where('user_id', $userId)->where('status', 'pending')->count()
+            : 0;
+        $myDeliveredOrders = Schema::hasTable('orders')
+            ? Order::where('status', 'delivered')
+                ->whereHas('items.artwork', fn ($q) => $q->where('user_id', $userId))
+                ->count()
             : 0;
 
         // My artworks by category
@@ -146,18 +154,35 @@ class DashboardController extends Controller
                 'count' => (int) $r->count,
             ]);
 
+        // Revenue by month — delivered orders containing MY artworks (last 6 months)
+        $revenueByMonth = collect(range(5, 0))->map(function ($monthsAgo) use ($userId) {
+            $date = now()->subMonths($monthsAgo);
+            $revenue = OrderItem::whereHas('order', fn ($q) => $q
+                    ->where('status', 'delivered')
+                    ->whereYear('delivered_at',  $date->year)
+                    ->whereMonth('delivered_at', $date->month)
+                )
+                ->whereHas('artwork', fn ($q) => $q->where('user_id', $userId))
+                ->sum('price');
+            return [
+                'label' => $date->format('M Y'),
+                'count' => (int) $revenue,
+            ];
+        });
+
         return Inertia::render('dashboard', [
             'artworks'      => $artworks->values(),
             'savedArtworks' => $savedArtworks->values(),
             'stats'         => [
-                'totalArtworks'   => Artwork::count(),
-                'savedCount'      => count($savedIds),
-                'liveExhibitions' => 2,
-                'myArtworks'      => $myTotalArtworks,
-                'myOrders'        => $myTotalOrders,
-                'myRevenue'       => (float) $myTotalRevenue,
-                'myCartCount'     => $myCartCount,
-                'myPendingOrders' => $myPendingOrders,
+                'totalArtworks'    => Artwork::count(),
+                'savedCount'       => count($savedIds),
+                'liveExhibitions'  => 2,
+                'myArtworks'       => $myTotalArtworks,
+                'myOrders'         => $myTotalOrders,
+                'myRevenue'        => (float) $myTotalRevenue,
+                'myCartCount'      => $myCartCount,
+                'myPendingOrders'  => $myPendingOrders,
+                'myDeliveredOrders'=> $myDeliveredOrders,
             ],
             'analytics' => [
                 'byCategory'      => $byCategory->values(),
@@ -165,6 +190,7 @@ class DashboardController extends Controller
                 'byMedium'        => $byMedium->values(),
                 'topArtworks'     => $topArtworks->values(),
                 'monthlyArtworks' => $monthlyArtworks->values(),
+                'revenueByMonth'  => $revenueByMonth->values(),
             ],
         ]);
     }
