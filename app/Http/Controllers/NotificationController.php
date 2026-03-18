@@ -81,6 +81,27 @@ class NotificationController extends Controller
         return response()->json(['ok' => true]);
     }
 
+    // ── Mark single as unread ─────────────────────────────────────────────────
+
+    public function markUnread(Request $request, string $id): JsonResponse
+    {
+        $request->user()
+            ->notifications()
+            ->findOrFail($id)
+            ->update(['read_at' => null]);
+
+        return response()->json(['ok' => true]);
+    }
+
+    // ── Mark all as unread ────────────────────────────────────────────────────
+
+    public function markAllUnread(Request $request): JsonResponse
+    {
+        $request->user()->notifications()->update(['read_at' => null]);
+
+        return response()->json(['ok' => true]);
+    }
+
     // ── Dismiss (delete) one ──────────────────────────────────────────────────
 
     public function destroy(Request $request, string $id): JsonResponse

@@ -1,8 +1,8 @@
 import { Head, router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
-import { useState } from 'react';
-import { Bell, CheckCheck, Trash2, ShoppingBag, Package, Info, BellOff } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Bell, CheckCheck, Trash2, ShoppingBag, Package, Info, BellOff, BellRing } from 'lucide-react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Notifications', href: '/notifications' },
@@ -48,46 +48,93 @@ const TYPE_ICONS: Record<string, React.ElementType> = {
     default:       Info,
 };
 
-function csrfToken(): string {
+// ── CSRF token ────────────────────────────────────────────────
+// Laravel sets an XSRF-TOKEN cookie. We read it and send it back
+// as X-XSRF-TOKEN (this is the standard Laravel/Axios convention).
+function xsrfToken(): string {
+    const match = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]+)/);
+    if (match) return decodeURIComponent(match[1]);
+    // fallback: meta tag (set in the Blade layout by @csrf)
     return (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content ?? '';
 }
 
-const HEADERS = () => ({
-    'Accept': 'application/json',
-    'X-Requested-With': 'XMLHttpRequest',
-    'X-CSRF-TOKEN': csrfToken(),
-});
+function apiFetch(method: string, url: string): Promise<Response> {
+    return fetch(url, {
+        method,
+        headers: {
+            'Accept':           'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-XSRF-TOKEN':     xsrfToken(),   // ← X-XSRF-TOKEN, not X-CSRF-TOKEN
+        },
+    });
+}
 
 export default function NotificationsIndex({ notifications }: Props) {
     const [items, setItems]        = useState<Notification[]>(notifications.data);
     const [unreadCount, setUnread] = useState(() => notifications.data.filter(n => !n.read_at).length);
     const [loading, setLoading]    = useState<string | null>(null);
 
+    const allRead = items.length > 0 && items.every(n => n.read_at !== null);
+
+    // ── Sync sidebar badge whenever unreadCount changes ────────────
+    useEffect(() => {
+        localStorage.setItem('notif_unread_count', String(unreadCount));
+        window.dispatchEvent(
+            new CustomEvent('notif-count-changed', { detail: { count: unreadCount } })
+        );
+    }, [unreadCount]);
+
+    // ── Mark single as READ ────────────────────────────────────────
     const markRead = async (notif: Notification) => {
         if (notif.read_at) {
             if (notif.data.action_url) router.visit(notif.data.action_url);
             return;
         }
         setLoading(notif.id);
-        await fetch(`/notifications/${notif.id}/read`, { method: 'PATCH', headers: HEADERS() });
-        setItems(prev => prev.map(n => n.id === notif.id ? { ...n, read_at: new Date().toISOString() } : n));
-        setUnread(c => Math.max(0, c - 1));
+        const res = await apiFetch('PATCH', `/notifications/${notif.id}/read`);
+        if (res.ok) {
+            setItems(prev => prev.map(n => n.id === notif.id ? { ...n, read_at: new Date().toISOString() } : n));
+            setUnread(c => Math.max(0, c - 1));
+        }
         setLoading(null);
-        if (notif.data.action_url) router.visit(notif.data.action_url);
+        if (res.ok && notif.data.action_url) router.visit(notif.data.action_url);
     };
 
+    // ── Mark single as UNREAD ──────────────────────────────────────
+    const markUnread = async (id: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        setLoading(id);
+        const res = await apiFetch('PATCH', `/notifications/${id}/unread`);
+        if (res.ok) {
+            setItems(prev => prev.map(n => n.id === id ? { ...n, read_at: null } : n));
+            setUnread(c => c + 1);
+        }
+        setLoading(null);
+    };
+
+    // ── Mark all as READ ───────────────────────────────────────────
     const markAllRead = async () => {
-        await fetch('/notifications/read-all', { method: 'POST', headers: HEADERS() });
+        const res = await apiFetch('POST', '/notifications/read-all');
+        if (!res.ok) return;
         setItems(prev => prev.map(n => ({ ...n, read_at: n.read_at ?? new Date().toISOString() })));
         setUnread(0);
     };
 
+    // ── Mark all as UNREAD ─────────────────────────────────────────
+    const markAllUnread = async () => {
+        const res = await apiFetch('POST', '/notifications/unread-all');
+        if (!res.ok) return;
+        setItems(prev => prev.map(n => ({ ...n, read_at: null })));
+        setUnread(items.length);
+    };
+
+    // ── Dismiss (delete) ───────────────────────────────────────────
     const dismiss = async (id: string, e: React.MouseEvent) => {
         e.stopPropagation();
         const notif = items.find(n => n.id === id);
         setItems(prev => prev.filter(n => n.id !== id));
         if (notif && !notif.read_at) setUnread(c => Math.max(0, c - 1));
-        await fetch(`/notifications/${id}`, { method: 'DELETE', headers: HEADERS() });
+        await apiFetch('DELETE', `/notifications/${id}`);
     };
 
     return (
@@ -106,14 +153,29 @@ export default function NotificationsIndex({ notifications }: Props) {
                             </span>
                         )}
                     </div>
-                    {unreadCount > 0 && (
-                        <button
-                            onClick={markAllRead}
-                            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-black dark:border-white text-black dark:text-white text-sm font-medium hover:bg-black dark:hover:bg-white hover:text-white dark:hover:text-black transition-colors"
-                        >
-                            <CheckCheck className="w-4 h-4" />
-                            Mark all as read
-                        </button>
+
+                    {/* Bulk action buttons */}
+                    {items.length > 0 && (
+                        <div className="flex items-center gap-2">
+                            {unreadCount > 0 && (
+                                <button
+                                    onClick={markAllRead}
+                                    className="flex items-center gap-2 px-4 py-2 rounded-lg border border-black dark:border-white text-black dark:text-white text-sm font-medium hover:bg-black dark:hover:bg-white hover:text-white dark:hover:text-black transition-colors"
+                                >
+                                    <CheckCheck className="w-4 h-4" />
+                                    Mark all as read
+                                </button>
+                            )}
+                            {allRead && (
+                                <button
+                                    onClick={markAllUnread}
+                                    className="flex items-center gap-2 px-4 py-2 rounded-lg border border-amber-500 text-amber-600 dark:text-amber-400 text-sm font-medium hover:bg-amber-500 hover:text-white transition-colors"
+                                >
+                                    <BellRing className="w-4 h-4" />
+                                    Mark all as unread
+                                </button>
+                            )}
+                        </div>
                     )}
                 </div>
 
@@ -159,7 +221,7 @@ export default function NotificationsIndex({ notifications }: Props) {
                                     </div>
 
                                     {/* Content */}
-                                    <div className="flex-1 min-w-0 pr-6">
+                                    <div className="flex-1 min-w-0 pr-16">
 
                                         {/* Sale: highlight buyer name */}
                                         {isSale && notif.data.buyer_name ? (
@@ -187,14 +249,28 @@ export default function NotificationsIndex({ notifications }: Props) {
                                         </p>
                                     </div>
 
-                                    {/* Dismiss */}
-                                    <button
-                                        onClick={(e) => dismiss(notif.id, e)}
-                                        className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 p-1 rounded-lg text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white hover:bg-gray-100 dark:hover:bg-neutral-800 transition-all"
-                                        title="Dismiss"
-                                    >
-                                        <Trash2 className="w-3.5 h-3.5" />
-                                    </button>
+                                    {/* Hover actions: mark unread + dismiss */}
+                                    <div className="absolute top-3 right-3 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        {/* Toggle read/unread */}
+                                        {!isUnread && (
+                                            <button
+                                                onClick={(e) => markUnread(notif.id, e)}
+                                                title="Mark as unread"
+                                                className="p-1 rounded-lg text-black/30 dark:text-white/30 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-all"
+                                            >
+                                                <BellRing className="w-3.5 h-3.5" />
+                                            </button>
+                                        )}
+
+                                        {/* Dismiss */}
+                                        <button
+                                            onClick={(e) => dismiss(notif.id, e)}
+                                            title="Dismiss"
+                                            className="p-1 rounded-lg text-black/30 dark:text-white/30 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all"
+                                        >
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                        </button>
+                                    </div>
 
                                     {/* Loading spinner */}
                                     {loading === notif.id && (

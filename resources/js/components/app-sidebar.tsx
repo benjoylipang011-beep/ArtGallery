@@ -1,4 +1,4 @@
-import { Link, usePage } from '@inertiajs/react';
+import { Link, usePage, router } from '@inertiajs/react';
 import { BookOpen, Folder, LayoutGrid, Package, Image, PlusCircle, Tag, Archive, ChevronRight, Bell, ShoppingCart, ClipboardList, FileBarChart } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { NavFooter } from '@/components/nav-footer';
@@ -28,7 +28,6 @@ export function usePageTransition() {
     const [visible, setVisible] = useState(true);
 
     useEffect(() => {
-        // router.on() returns a cleanup function in Inertia v2
         const removeStart  = router.on('start',  () => setVisible(false));
         const removeFinish = router.on('finish', () => setTimeout(() => setVisible(true), 50));
 
@@ -41,32 +40,62 @@ export function usePageTransition() {
     return visible;
 }
 
-// ── Bell nav link (navigates to /notifications page) ─────────
+// ── Bell nav link ────────────────────────────────────────────
 function NotificationTrigger() {
-    const { url }                       = usePage();
-    const [unreadCount, setUnreadCount] = useState(0);
-    const isActive                      = url === '/notifications';
+    const { url } = usePage();
+    const [unreadCount, setUnreadCount] = useState<number>(
+        () => Number(localStorage.getItem('notif_unread_count') ?? 0)
+    );
+    const isActive = url === '/notifications';
 
     useEffect(() => {
+        // Keep badge in sync when the notifications page dispatches an update
+        // (e.g. after mark-all-read). This fires in the SAME tab immediately.
+        const onCountChanged = (e: Event) => {
+            const count = (e as CustomEvent<{ count: number }>).detail.count;
+            setUnreadCount(count);
+            localStorage.setItem('notif_unread_count', String(count));
+        };
+        window.addEventListener('notif-count-changed', onCountChanged);
+
         const poll = async () => {
             try {
                 const res = await fetch('/notifications/recent', {
                     headers: {
-                        'Accept': 'application/json',
+                        'Accept':           'application/json',
                         'X-Requested-With': 'XMLHttpRequest',
-                        'X-CSRF-TOKEN': CSRF(),
+                        'X-CSRF-TOKEN':     CSRF(),
                     },
                 });
                 if (res.ok) {
-                    const data = await res.json();
-                    setUnreadCount(data.unread_count ?? 0);
+                    const data  = await res.json();
+                    const count = data.unread_count ?? 0;
+                    // Only overwrite if the value actually changed — prevents
+                    // a stale server response from undoing an optimistic reset
+                    // that was written to localStorage by mark-all-read.
+                    setUnreadCount(prev => {
+                        if (prev !== count) {
+                            localStorage.setItem('notif_unread_count', String(count));
+                            return count;
+                        }
+                        return prev;
+                    });
                 }
             } catch { /* silent */ }
         };
-        poll();
-        const interval = setInterval(poll, 30_000);
-        return () => clearInterval(interval);
-    }, [url]);
+
+        // Delay the first automatic poll by 1 s so the optimistic value
+        // written to localStorage by Index.tsx before navigation is
+        // respected instead of being immediately overwritten.
+        const firstPollTimer = setTimeout(poll, 1000);
+        const interval       = setInterval(poll, 30_000);
+
+        return () => {
+            clearTimeout(firstPollTimer);
+            clearInterval(interval);
+            window.removeEventListener('notif-count-changed', onCountChanged);
+        };
+    }, []);
 
     return (
         <SidebarMenuItem>
@@ -111,7 +140,9 @@ export function AppSidebar() {
     const { url } = usePage();
     const isProductActive = url.startsWith('/products');
     const [open, setOpen] = useState(isProductActive);
-    const [cartCount, setCartCount] = useState(0);
+    const [cartCount, setCartCount] = useState<number>(
+        () => Number(localStorage.getItem('cart_count') ?? 0)
+    );
 
     useEffect(() => {
         const fetchCart = async () => {
@@ -120,8 +151,10 @@ export function AppSidebar() {
                     headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
                 });
                 if (res.ok) {
-                    const data = await res.json();
-                    setCartCount(data.count ?? 0);
+                    const data  = await res.json();
+                    const count = data.count ?? 0;
+                    localStorage.setItem('cart_count', String(count));
+                    setCartCount(count);
                 }
             } catch { /* silent */ }
         };

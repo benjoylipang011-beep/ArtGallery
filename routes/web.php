@@ -80,11 +80,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/cart/buy-now/place', [CartController::class, 'placeBuyNow'])->name('cart.buy-now.place');
 
     // ── Notifications ─────────────────────────────────────────────────────────
-    Route::get   ('/notifications',           [NotificationController::class, 'index'])      ->name('notifications.index');
-    Route::get   ('/notifications/recent',    [NotificationController::class, 'recent'])     ->name('notifications.recent');
-    Route::post  ('/notifications/read-all',  [NotificationController::class, 'markAllRead'])->name('notifications.read-all');
-    Route::patch ('/notifications/{id}/read', [NotificationController::class, 'markRead'])   ->name('notifications.read');
-    Route::delete('/notifications/{id}',      [NotificationController::class, 'destroy'])    ->name('notifications.destroy');
+    Route::get   ('/notifications',              [NotificationController::class, 'index'])       ->name('notifications.index');
+    Route::get   ('/notifications/recent',        [NotificationController::class, 'recent'])      ->name('notifications.recent');
+    Route::post  ('/notifications/read-all',      [NotificationController::class, 'markAllRead']) ->name('notifications.read-all');
+    Route::post  ('/notifications/unread-all',    [NotificationController::class, 'markAllUnread'])->name('notifications.unread-all');
+    Route::patch ('/notifications/{id}/read',     [NotificationController::class, 'markRead'])    ->name('notifications.read');
+    Route::patch ('/notifications/{id}/unread',   [NotificationController::class, 'markUnread'])  ->name('notifications.unread');
+    Route::delete('/notifications/{id}',          [NotificationController::class, 'destroy'])     ->name('notifications.destroy');
 
     // ── Orders ────────────────────────────────────────────────────────────────
     Route::get   ('/orders',         [OrderController::class, 'index'])  ->name('orders.index');
