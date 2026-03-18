@@ -52,7 +52,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('products',        [ArtworkController::class, 'index'])->name('products.index');
     Route::get('products/create', [ArtworkController::class, 'create'])->name('products.create');
     Route::post('products',       [ArtworkController::class, 'store'])->name('products.store');
-
+ 
     // Static pages MUST come before the {artwork} wildcard
     Route::get('products/categories',         [CategoryController::class, 'index'])->name('products.categories');
     Route::post('products/categories',        [CategoryController::class, 'store'])->name('products.categories.store');
@@ -87,9 +87,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/notifications/{id}',      [NotificationController::class, 'destroy'])    ->name('notifications.destroy');
 
     // ── Orders ────────────────────────────────────────────────────────────────
-    Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
+    Route::get   ('/orders',         [OrderController::class, 'index'])  ->name('orders.index');
+    Route::delete('/orders/{order}', [OrderController::class, 'destroy'])->name('orders.destroy');
 
-    // Owner: accept or decline a pending order
+    // Owner: manage order status
     Route::patch('/orders/{order}/accept',  [OrderController::class, 'accept']) ->name('orders.accept');
     Route::patch('/orders/{order}/decline', [OrderController::class, 'decline'])->name('orders.decline');
     Route::patch('/orders/{order}/ship',    [OrderController::class, 'ship'])   ->name('orders.ship');

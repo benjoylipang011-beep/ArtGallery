@@ -39,7 +39,7 @@ const DOT_COLORS: Record<string, string> = {
     artist_joined: 'bg-blue-500',
     exhibition:    'bg-red-500',
     comment:       'bg-gray-500',
-    default:       'bg-black',
+    default:       'bg-amber-500',
 };
 
 const TYPE_ICONS: Record<string, React.ElementType> = {
@@ -98,10 +98,10 @@ export default function NotificationsIndex({ notifications }: Props) {
                 {/* Header */}
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <Bell className="w-6 h-6 text-black" />
+                        <Bell className="w-6 h-6 text-black dark:text-white" />
                         <h1 className="text-2xl font-bold text-black dark:text-white">Notifications</h1>
                         {unreadCount > 0 && (
-                            <span className="text-xs font-bold bg-black text-white px-2 py-0.5 rounded-full">
+                            <span className="text-xs font-bold bg-black dark:bg-white text-white dark:text-black px-2 py-0.5 rounded-full">
                                 {unreadCount} unread
                             </span>
                         )}
@@ -109,7 +109,7 @@ export default function NotificationsIndex({ notifications }: Props) {
                     {unreadCount > 0 && (
                         <button
                             onClick={markAllRead}
-                            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-black text-black text-sm font-medium hover:bg-black hover:text-white transition-colors"
+                            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-black dark:border-white text-black dark:text-white text-sm font-medium hover:bg-black dark:hover:bg-white hover:text-white dark:hover:text-black transition-colors"
                         >
                             <CheckCheck className="w-4 h-4" />
                             Mark all as read
@@ -119,7 +119,7 @@ export default function NotificationsIndex({ notifications }: Props) {
 
                 {/* List */}
                 {items.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-24 gap-4 text-black">
+                    <div className="flex flex-col items-center justify-center py-24 gap-4 text-black dark:text-white">
                         <BellOff className="w-16 h-16 opacity-20" strokeWidth={1} />
                         <p className="text-lg font-medium">No notifications yet</p>
                         <p className="text-sm opacity-50">You'll be notified when someone buys your artwork.</p>
@@ -127,10 +127,10 @@ export default function NotificationsIndex({ notifications }: Props) {
                 ) : (
                     <div className="flex flex-col gap-3">
                         {items.map((notif) => {
-                            const notifType    = notif.data.type ?? 'default';
+                            const notifType     = notif.data.type ?? 'default';
                             const IconComponent = TYPE_ICONS[notifType] ?? TYPE_ICONS.default;
-                            const isUnread     = !notif.read_at;
-                            const isSale       = notifType === 'artwork_sold';
+                            const isUnread      = !notif.read_at;
+                            const isSale        = notifType === 'artwork_sold';
 
                             return (
                                 <div
@@ -138,7 +138,7 @@ export default function NotificationsIndex({ notifications }: Props) {
                                     onClick={() => markRead(notif)}
                                     className={`group relative flex items-start gap-4 p-4 rounded-2xl border cursor-pointer transition-all duration-150 ${
                                         isUnread
-                                            ? 'border-black bg-white dark:bg-neutral-900'
+                                            ? 'border-black dark:border-neutral-500 bg-white dark:bg-neutral-900'
                                             : 'border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 opacity-60'
                                     } hover:opacity-100`}
                                 >
@@ -152,7 +152,7 @@ export default function NotificationsIndex({ notifications }: Props) {
                                         isSale
                                             ? 'bg-green-500 text-white'
                                             : isUnread
-                                                ? 'bg-black text-white'
+                                                ? 'bg-black dark:bg-white text-white dark:text-black'
                                                 : 'bg-gray-100 dark:bg-neutral-800 text-black dark:text-white'
                                     }`}>
                                         <IconComponent className="w-5 h-5" />
@@ -190,7 +190,7 @@ export default function NotificationsIndex({ notifications }: Props) {
                                     {/* Dismiss */}
                                     <button
                                         onClick={(e) => dismiss(notif.id, e)}
-                                        className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 p-1 rounded-lg text-black/30 hover:text-black hover:bg-gray-100 dark:hover:bg-neutral-800 transition-all"
+                                        className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 p-1 rounded-lg text-black/30 dark:text-white/30 hover:text-black dark:hover:text-white hover:bg-gray-100 dark:hover:bg-neutral-800 transition-all"
                                         title="Dismiss"
                                     >
                                         <Trash2 className="w-3.5 h-3.5" />
@@ -199,7 +199,7 @@ export default function NotificationsIndex({ notifications }: Props) {
                                     {/* Loading spinner */}
                                     {loading === notif.id && (
                                         <div className="absolute inset-0 flex items-center justify-center bg-white/60 dark:bg-neutral-900/60 rounded-2xl">
-                                            <svg className="animate-spin w-5 h-5 text-black" viewBox="0 0 24 24" fill="none">
+                                            <svg className="animate-spin w-5 h-5 text-black dark:text-white" viewBox="0 0 24 24" fill="none">
                                                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
                                                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
                                             </svg>
@@ -215,18 +215,18 @@ export default function NotificationsIndex({ notifications }: Props) {
                                 {notifications.current_page > 1 && (
                                     <a
                                         href={`/notifications?page=${notifications.current_page - 1}`}
-                                        className="px-4 py-2 rounded-lg border border-black text-sm font-medium text-black hover:bg-black hover:text-white transition-colors"
+                                        className="px-4 py-2 rounded-lg border border-black dark:border-neutral-600 text-sm font-medium text-black dark:text-white hover:bg-black dark:hover:bg-white hover:text-white dark:hover:text-black transition-colors"
                                     >
                                         ← Previous
                                     </a>
                                 )}
-                                <span className="text-sm text-black/50">
+                                <span className="text-sm text-black/50 dark:text-white/50">
                                     Page {notifications.current_page} of {notifications.last_page}
                                 </span>
                                 {notifications.current_page < notifications.last_page && (
                                     <a
                                         href={`/notifications?page=${notifications.current_page + 1}`}
-                                        className="px-4 py-2 rounded-lg border border-black text-sm font-medium text-black hover:bg-black hover:text-white transition-colors"
+                                        className="px-4 py-2 rounded-lg border border-black dark:border-neutral-600 text-sm font-medium text-black dark:text-white hover:bg-black dark:hover:bg-white hover:text-white dark:hover:text-black transition-colors"
                                     >
                                         Next →
                                     </a>

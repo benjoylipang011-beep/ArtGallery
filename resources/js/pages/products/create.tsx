@@ -44,15 +44,15 @@ export default function CreateProduct() {
     };
 
     const handleSubmit = () => {
-    post('/products', {
-        forceFormData: true,
-        onSuccess: () => {
-            reset();
-            setPreview(null);
-            setFileName(null);
-        },
-    });
-};
+        post('/products', {
+            forceFormData: true,
+            onSuccess: () => {
+                reset();
+                setPreview(null);
+                setFileName(null);
+            },
+        });
+    };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -62,7 +62,7 @@ export default function CreateProduct() {
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-2xl font-bold text-black dark:text-white tracking-tight">Add New Artwork</h1>
-                        <p className="text-sm text-black dark:text-black mt-1">Fill in the details to list a new piece in the gallery.</p>
+                        <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">Fill in the details to list a new piece in the gallery.</p>
                     </div>
                 </div>
 
@@ -72,7 +72,7 @@ export default function CreateProduct() {
 
                         {/* Artwork Info Card */}
                         <div className="rounded-xl border border-black dark:border-neutral-600 bg-white dark:bg-neutral-900 p-5">
-                            <h2 className="text-sm font-semibold uppercase tracking-widest text-black mb-4">Artwork Info</h2>
+                            <h2 className="text-sm font-semibold uppercase tracking-widest text-black dark:text-white mb-4">Artwork Info</h2>
                             <div className="flex flex-col gap-4">
                                 <div>
                                     <label className="block text-sm font-medium text-black dark:text-neutral-300 mb-1">Title <span className="text-red-400">*</span></label>
@@ -111,7 +111,7 @@ export default function CreateProduct() {
 
                         {/* Details Card */}
                         <div className="rounded-xl border border-black dark:border-neutral-600 bg-white dark:bg-neutral-900 p-5">
-                            <h2 className="text-sm font-semibold uppercase tracking-widest text-black mb-4">Details</h2>
+                            <h2 className="text-sm font-semibold uppercase tracking-widest text-black dark:text-white mb-4">Details</h2>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium text-black dark:text-neutral-300 mb-1">Medium</label>
@@ -208,7 +208,7 @@ export default function CreateProduct() {
 
                         {/* Image Upload Card */}
                         <div className="rounded-xl border border-black dark:border-neutral-600 bg-white dark:bg-neutral-900 p-5">
-                            <h2 className="text-sm font-semibold uppercase tracking-widest text-black mb-4">Artwork Image</h2>
+                            <h2 className="text-sm font-semibold uppercase tracking-widest text-black dark:text-white mb-4">Artwork Image</h2>
 
                             {preview ? (
                                 <div className="relative rounded-lg overflow-hidden">
@@ -219,7 +219,7 @@ export default function CreateProduct() {
                                     >
                                         <X className="w-4 h-4" />
                                     </button>
-                                    <p className="text-xs text-black mt-2 truncate">{fileName}</p>
+                                    <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-2 truncate">{fileName}</p>
                                 </div>
                             ) : (
                                 <label
@@ -233,13 +233,13 @@ export default function CreateProduct() {
                                     onDrop={handleDrop}
                                 >
                                     <div className="w-12 h-12 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
-                                        <ImageIcon className="w-6 h-6 text-black" />
+                                        <ImageIcon className="w-6 h-6 text-black dark:text-white" />
                                     </div>
                                     <div className="text-center">
                                         <p className="text-sm font-medium text-black dark:text-neutral-300">
                                             Drop image here or <span className="text-black dark:text-white underline">browse</span>
                                         </p>
-                                        <p className="text-xs text-black mt-1">PNG, JPG, WEBP up to 10MB</p>
+                                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">PNG, JPG, WEBP up to 10MB</p>
                                     </div>
                                     <input
                                         type="file"
@@ -265,7 +265,7 @@ export default function CreateProduct() {
                             <button
                                 type="button"
                                 onClick={() => window.history.back()}
-                                className="w-full rounded-lg border border-neutral-200 dark:border-neutral-700 text-black dark:text-black font-medium py-2.5 text-sm hover:bg-neutral-50 dark:hover:bg-neutral-800 transition"
+                                className="w-full rounded-lg border border-neutral-200 dark:border-neutral-700 text-black dark:text-white font-medium py-2.5 text-sm hover:bg-neutral-50 dark:hover:bg-neutral-800 transition"
                             >
                                 Cancel
                             </button>

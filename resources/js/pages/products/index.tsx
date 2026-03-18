@@ -62,7 +62,7 @@ function DeleteModal({ artwork, onClose }: { artwork: Artwork; onClose: () => vo
                     </div>
                     <div>
                         <h3 className="font-bold text-black dark:text-white">Delete Artwork</h3>
-                        <p className="text-sm text-black dark:text-black">This action cannot be undone.</p>
+                        <p className="text-sm text-neutral-500 dark:text-neutral-400">This action cannot be undone.</p>
                     </div>
                 </div>
                 <p className="text-sm text-black dark:text-neutral-300">
@@ -72,7 +72,7 @@ function DeleteModal({ artwork, onClose }: { artwork: Artwork; onClose: () => vo
                     <button
                         onClick={onClose}
                         disabled={deleting}
-                        className="flex-1 rounded-lg border border-neutral-200 dark:border-neutral-700 text-black dark:text-black font-medium py-2.5 text-sm hover:bg-neutral-50 dark:hover:bg-neutral-800 transition disabled:opacity-50"
+                        className="flex-1 rounded-lg border border-neutral-200 dark:border-neutral-700 text-black dark:text-white font-medium py-2.5 text-sm hover:bg-neutral-50 dark:hover:bg-neutral-800 transition disabled:opacity-50"
                     >
                         Cancel
                     </button>
@@ -135,7 +135,6 @@ function ArtworkCard({ artwork, index, authUserId, isSaved, onDeleteRequest, onT
         if (saving) return;
         setSaving(true);
         onToggleSave(artwork.id, isSaved);
-        // Brief debounce to prevent double-clicks
         setTimeout(() => setSaving(false), 600);
     };
 
@@ -228,11 +227,11 @@ function ArtworkCard({ artwork, index, authUserId, isSaved, onDeleteRequest, onT
                     <p className="font-semibold text-black dark:text-white text-sm leading-tight truncate">
                         {artwork.title}
                     </p>
-                    <p className="text-xs text-black dark:text-black mt-1">{artwork.artist}</p>
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">{artwork.artist}</p>
                 </div>
 
                 <div className="flex items-center justify-between mt-4 pt-3 border-t border-neutral-100 dark:border-neutral-800">
-                    <span className="text-xs text-black">{artwork.category ?? '—'}</span>
+                    <span className="text-xs text-neutral-500 dark:text-neutral-400">{artwork.category ?? '—'}</span>
                     <span className="font-semibold text-sm text-amber-600 dark:text-amber-400">
                         {artwork.price ? `₱${Number(artwork.price).toLocaleString()}` : '—'}
                     </span>
@@ -263,11 +262,11 @@ export default function ProductsIndex({ artworks, authUserId, savedIds: initialS
 
         try {
             if (currentlySaved) {
-                const res = await axios.delete(`/artworks/${artworkId}/save`);
+                await axios.delete(`/artworks/${artworkId}/save`);
                 setSavedIds((prev) => prev.filter((id) => id !== artworkId));
                 showToast('Removed from saved artworks');
             } else {
-                const res = await axios.post(`/artworks/${artworkId}/save`);
+                await axios.post(`/artworks/${artworkId}/save`);
                 setSavedIds((prev) => prev.includes(artworkId) ? prev : [...prev, artworkId]);
                 showToast('Artwork saved to your collection!');
             }
@@ -327,10 +326,10 @@ export default function ProductsIndex({ artworks, authUserId, savedIds: initialS
                             </Link>
                         </div>
                     </div>
-                    <p className="text-sm text-black dark:text-black">
-                        Showing <span className="font-semibold">{filtered.length}</span>
+                    <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                        Showing <span className="font-semibold text-black dark:text-white">{filtered.length}</span>
                         {filtered.length !== artworks.length && (
-                            <span> of <span className="font-semibold">{artworks.length}</span></span>
+                            <span> of <span className="font-semibold text-black dark:text-white">{artworks.length}</span></span>
                         )} artworks
                         {savedIds.length > 0 && (
                             <span className="ml-3 inline-flex items-center gap-1 text-xs text-rose-500 dark:text-rose-400 font-medium">
@@ -352,7 +351,7 @@ export default function ProductsIndex({ artworks, authUserId, savedIds: initialS
                 {/* Search Bar */}
                 <div className="flex items-center gap-2">
                     <div className="relative group">
-                        <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-black pointer-events-none z-10 transition-colors group-focus-within:text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none z-10 transition-colors group-focus-within:text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
                         </svg>
                         <input
@@ -365,7 +364,7 @@ export default function ProductsIndex({ artworks, authUserId, savedIds: initialS
                         {search && (
                             <button
                                 onClick={() => setSearch('')}
-                                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-black hover:text-black dark:hover:text-neutral-200 transition-colors"
+                                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-black dark:hover:text-neutral-200 transition-colors"
                             >
                                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
@@ -377,14 +376,14 @@ export default function ProductsIndex({ artworks, authUserId, savedIds: initialS
 
                 {/* Artworks Grid */}
                 {artworks.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-20 text-black">
+                    <div className="flex flex-col items-center justify-center py-20 text-black dark:text-white">
                         <p className="text-lg font-medium">No artworks yet</p>
-                        <p className="text-sm mt-1">Click "Add Artwork" to add your first piece.</p>
+                        <p className="text-sm mt-1 text-neutral-500 dark:text-neutral-400">Click "Add Artwork" to add your first piece.</p>
                     </div>
                 ) : filtered.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-20 text-black">
+                    <div className="flex flex-col items-center justify-center py-20 text-black dark:text-white">
                         <p className="text-lg font-medium">No results found</p>
-                        <p className="text-sm mt-1">Try a different search term or category.</p>
+                        <p className="text-sm mt-1 text-neutral-500 dark:text-neutral-400">Try a different search term or category.</p>
                         <button
                             onClick={() => { setSearch(''); setSelectedCategory('All Categories'); }}
                             className="mt-3 text-sm text-amber-600 hover:text-amber-700 underline underline-offset-2"

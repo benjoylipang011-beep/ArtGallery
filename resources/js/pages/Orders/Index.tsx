@@ -109,7 +109,7 @@ function OrderTracker({ order }: { order: Order }) {
                             w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-all
                             ${done
                                 ? 'bg-amber-500 text-white shadow-[0_0_10px_rgba(245,158,11,0.4)]'
-                                : 'bg-neutral-100 dark:bg-neutral-800 text-black dark:text-black border-2 border-neutral-200 dark:border-neutral-700'}
+                                : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-400 dark:text-neutral-500 border-2 border-neutral-200 dark:border-neutral-700'}
                             ${active ? 'ring-2 ring-amber-400/40 ring-offset-2 ring-offset-white dark:ring-offset-neutral-900' : ''}
                         `}>
                             {done && !active
@@ -121,17 +121,17 @@ function OrderTracker({ order }: { order: Order }) {
                         <p className={`text-[10px] font-semibold text-center leading-tight
                             ${active  ? 'text-amber-600 dark:text-amber-400' :
                               done    ? 'text-black dark:text-neutral-300' :
-                                        'text-black dark:text-black'}`}>
+                                        'text-neutral-400 dark:text-neutral-500'}`}>
                             {label}
                         </p>
 
                         {/* Timestamp */}
                         {ts && done ? (
-                            <p className="text-[9px] text-black dark:text-black text-center leading-tight">
+                            <p className="text-[9px] text-neutral-500 dark:text-neutral-400 text-center leading-tight">
                                 {formatTs(ts)}
                             </p>
                         ) : (
-                            <p className="text-[9px] text-neutral-300 dark:text-black text-center">
+                            <p className="text-[9px] text-neutral-300 dark:text-neutral-600 text-center">
                                 {done ? '' : '—'}
                             </p>
                         )}
@@ -144,8 +144,8 @@ function OrderTracker({ order }: { order: Order }) {
 
 // ── Page ───────────────────────────────────────────────────────
 export default function OrdersPage({ orders }: Props) {
-    const [deletingId, setDeletingId]         = useState<number | null>(null);
-    const [confirmId, setConfirmId]           = useState<number | null>(null);
+    const [deletingId, setDeletingId] = useState<number | null>(null);
+    const [confirmId, setConfirmId]   = useState<number | null>(null);
 
     const handleDelete = (id: number) => {
         setDeletingId(id);
@@ -166,7 +166,7 @@ export default function OrdersPage({ orders }: Props) {
                 </div>
 
                 {orders.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-24 gap-4 text-black">
+                    <div className="flex flex-col items-center justify-center py-24 gap-4 text-black dark:text-white">
                         <PackageOpen className="w-16 h-16 opacity-30" strokeWidth={1} />
                         <p className="text-lg font-medium">No orders yet</p>
                         <Link
@@ -184,8 +184,8 @@ export default function OrdersPage({ orders }: Props) {
                                 {/* Order header */}
                                 <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
                                     <div>
-                                        <p className="text-xs text-black">Order #{order.id}</p>
-                                        <p className="text-xs text-black mt-0.5">
+                                        <p className="text-xs text-neutral-500 dark:text-neutral-400">Order #{order.id}</p>
+                                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
                                             {new Date(order.created_at).toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' })}
                                         </p>
                                     </div>
@@ -239,7 +239,7 @@ export default function OrdersPage({ orders }: Props) {
                                             </div>
                                             <div className="flex-1 min-w-0">
                                                 <p className="text-sm font-medium text-black dark:text-white truncate">{item.artwork.title}</p>
-                                                <p className="text-xs text-black dark:text-black">{item.artwork.artist}</p>
+                                                <p className="text-xs text-neutral-500 dark:text-neutral-400">{item.artwork.artist}</p>
                                             </div>
                                             <span className="text-sm font-semibold text-amber-600 dark:text-amber-400">
                                                 ₱{Number(item.price).toLocaleString()}
@@ -249,7 +249,7 @@ export default function OrdersPage({ orders }: Props) {
                                 </div>
 
                                 {/* Delivery info */}
-                                <div className="px-5 py-3 bg-neutral-50 dark:bg-neutral-800/50 border-t border-neutral-100 dark:border-neutral-800 flex flex-wrap gap-x-6 gap-y-1 text-xs text-black dark:text-black">
+                                <div className="px-5 py-3 bg-neutral-50 dark:bg-neutral-800/50 border-t border-neutral-100 dark:border-neutral-800 flex flex-wrap gap-x-6 gap-y-1 text-xs text-neutral-600 dark:text-neutral-400">
                                     <span>📦 {order.full_name} · {order.phone}</span>
                                     <span>📍 {order.address}</span>
                                     <span>💳 {order.payment_method === 'cash_on_delivery' ? 'Cash on Delivery' : 'GCash'}</span>
