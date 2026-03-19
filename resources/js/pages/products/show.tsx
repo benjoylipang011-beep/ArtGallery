@@ -2,26 +2,9 @@ import { Head, Link, router, usePage } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 import { useState } from 'react';
-import { ArrowLeft, Trash2, Calendar, Ruler, Tag, Palette, User, FileText, ShoppingCart, PackageCheck, Clock, Phone, CreditCard, CheckCheck, Truck, Home } from 'lucide-react';
+import { ArrowLeft, Trash2, Calendar, Ruler, Tag, Palette, User, FileText, ShoppingCart, PackageCheck, Clock, Phone, CreditCard, CheckCheck, Truck, Home, Zap, MapPin, XCircle } from 'lucide-react';
 
-// ── Inline Zap icon (replaces lucide Zap which may be unsupported) ─────────
-function ZapIcon({ className }: { className?: string }) {
-    return (
-        <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-        </svg>
-    );
-}
 
-// ── Inline MapPin icon (replaces lucide MapPin if unsupported) ────────────
-function MapPinIcon({ className }: { className?: string }) {
-    return (
-        <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-            <circle cx="12" cy="10" r="3" />
-        </svg>
-    );
-}
 
 interface Artwork {
     id: number;
@@ -48,6 +31,8 @@ interface PendingOrder {
     payment_method: string;
     total: string;
     created_at: string;
+    cancellation_reason?: string | null;
+    cancelled_at?: string | null;
 }
 
 interface Props {
@@ -283,7 +268,7 @@ export default function ShowArtwork({ artwork, authUserId, inCart, pendingOrder 
                                         <span>{pendingOrder.phone}</span>
                                     </div>
                                     <div className="flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-300">
-                                        <MapPinIcon className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                                        <MapPin className="w-3.5 h-3.5 text-amber-500 shrink-0" />
                                         <span>{pendingOrder.address}</span>
                                     </div>
                                     <div className="flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-300">
@@ -355,6 +340,42 @@ export default function ShowArtwork({ artwork, authUserId, inCart, pendingOrder 
                             </div>
                         )}
 
+                        {/* Owner sees a cancelled order on this artwork */}
+                        {isOwner && artwork.status === 'available' && pendingOrder && pendingOrder.status === 'cancelled' && (
+                            <div className="rounded-xl border-2 border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/10 p-5 flex flex-col gap-3">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-8 h-8 rounded-full bg-red-500 flex items-center justify-center shrink-0">
+                                        <XCircle className="w-4 h-4 text-white" />
+                                    </div>
+                                    <div>
+                                        <p className="font-bold text-sm text-red-700 dark:text-red-400">Order Cancelled by Buyer</p>
+                                        <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                                            Order #{pendingOrder.id} · {pendingOrder.cancelled_at
+                                                ? new Date(pendingOrder.cancelled_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })
+                                                : new Date(pendingOrder.created_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="rounded-lg bg-white dark:bg-neutral-800 border border-red-200 dark:border-red-800/40 p-4 flex flex-col gap-2">
+                                    <p className="text-xs font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500 mb-1">Buyer</p>
+                                    <div className="flex items-center gap-2 text-sm text-black dark:text-white">
+                                        <User className="w-3.5 h-3.5 text-red-400 shrink-0" />
+                                        <span className="font-medium">{pendingOrder.buyer_name}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-300">
+                                        <Phone className="w-3.5 h-3.5 text-red-400 shrink-0" />
+                                        <span>{pendingOrder.phone}</span>
+                                    </div>
+                                </div>
+                                <div className="rounded-lg bg-white dark:bg-neutral-800 border border-red-200 dark:border-red-800/40 p-4">
+                                    <p className="text-xs font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500 mb-1">Cancellation Reason</p>
+                                    <p className="text-sm text-red-600 dark:text-red-400 italic">
+                                        {pendingOrder.cancellation_reason ?? 'No reason provided'}
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+
                         {/* Buy / Cart buttons — only for non-owners */}
                         {!isOwner && isAvailable && (
                             <div className="flex gap-3">
@@ -362,7 +383,7 @@ export default function ShowArtwork({ artwork, authUserId, inCart, pendingOrder 
                                     onClick={handleBuyNow}
                                     className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-semibold text-sm transition-colors"
                                 >
-                                    <ZapIcon className="w-4 h-4" />
+                                    <Zap className="w-4 h-4" />
                                     Buy Now
                                 </button>
                                 <button

@@ -13,6 +13,7 @@ class Order extends Model
         'full_name', 'phone', 'address', 'payment_method',
         'tracking_note',
         'confirmed_at', 'shipped_at', 'delivered_at', 'cancelled_at',
+        'cancellation_reason',
     ];
 
     protected $casts = [

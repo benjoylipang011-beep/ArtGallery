@@ -103,6 +103,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('admin.orders.status');
     Route::get('/admin/orders', [OrderController::class, 'adminIndex'])
         ->name('admin.orders.index');
+        Route::post('/orders/{order}/cancel', [OrderController::class, 'cancel'])->name('orders.cancel');
 
 });
 

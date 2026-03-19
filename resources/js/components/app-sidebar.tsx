@@ -1,7 +1,6 @@
 import { Link, usePage, router } from '@inertiajs/react';
-import { BookOpen, Folder, LayoutGrid, Package, Image, PlusCircle, Tag, Archive, ChevronRight, Bell, ShoppingCart, ClipboardList, FileBarChart } from 'lucide-react';
+import { LayoutGrid, Package, Image, PlusCircle, Tag, Archive, ChevronRight, Bell, ShoppingCart, ClipboardList, FileBarChart } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { NavFooter } from '@/components/nav-footer';
 import { NavUser } from '@/components/nav-user';
 import {
     Sidebar,
@@ -123,11 +122,6 @@ function NotificationTrigger() {
 }
 
 // ── Static nav data ──────────────────────────────────────────
-const footerNavItems = [
-    { title: 'Repository',    href: 'https://github.com/laravel/react-starter-kit', icon: Folder   },
-    { title: 'Documentation', href: 'https://laravel.com/docs/starter-kits#react',  icon: BookOpen },
-];
-
 const productSubItems = [
     { title: 'All Artworks', href: '/products',             icon: Image      },
     { title: 'Add Artwork',  href: '/products/create',      icon: PlusCircle },
@@ -162,17 +156,17 @@ export function AppSidebar() {
     }, [url]);
 
     return (
-        <Sidebar collapsible="icon" variant="inset">
-            <SidebarHeader className="pb-2">
+        <Sidebar collapsible="icon" variant="inset" style={{ "--sidebar": "#0d1b2a", "--sidebar-foreground": "255 255 255", "--sidebar-accent": "#1a2e45", "--sidebar-accent-foreground": "#ffffff" } as React.CSSProperties}>
+            <SidebarHeader className="p-0">
                 <SidebarMenu>
                     <SidebarMenuItem>
-                        <div className="flex flex-col items-center w-full pt-3 pb-2 px-2">
+                        <div className="flex flex-col items-center w-full px-2">
                             <img
-                                src="/Gemini_Generated_Image_d9cjlzd9cjlzd9cj-removebg-preview.png"
+                                src="/Gemini_Generated_Image_dkoz8wdkoz8wdkoz-removebg-preview.png"
                                 alt="Bench Art Gallery Logo"
-                                className="w-24 h-24 object-contain transition-all"
+                                className="w-24 h-24 object-contain transition-all -mb-3"
                             />
-                            <span className="text-base font-bold text-neutral-900 dark:text-white tracking-tight text-center leading-tight mt-2 group-data-[collapsible=icon]:hidden">
+                            <span className="text-base font-black text-white tracking-wide text-center leading-tight group-data-[collapsible=icon]:hidden">
                                 Bench Art Gallery
                             </span>
                         </div>
@@ -180,9 +174,8 @@ export function AppSidebar() {
                 </SidebarMenu>
             </SidebarHeader>
 
-            <SidebarContent>
+            <SidebarContent className="mt-6">
                 <SidebarGroup>
-                    <SidebarGroupLabel>Platform</SidebarGroupLabel>
                     <SidebarMenu>
 
                         {/* Dashboard */}
@@ -273,7 +266,6 @@ export function AppSidebar() {
             </SidebarContent>
 
             <SidebarFooter>
-                <NavFooter items={footerNavItems} className="mt-auto" />
                 <NavUser />
             </SidebarFooter>
         </Sidebar>

@@ -1,11 +1,11 @@
 <?php
 
 namespace App\Http\Controllers;
-
-use App\Models\Order;
 use Illuminate\Http\Request;
+use App\Models\Order;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;
+use App\Notifications\OrderCancelled;
 
 class OrderController extends Controller
 {
@@ -250,4 +250,43 @@ class OrderController extends Controller
 
         return back()->with('success', 'Order marked as delivered!');
     }
+
+    public function cancel(Request $request, Order $order)
+{
+    if ($order->user_id !== $request->user()->id) {
+        abort(403);
+    }
+
+    if (!in_array($order->status, ['pending', 'confirmed'])) {
+        return back()->with('error', 'This order cannot be cancelled at this stage.');
+    }
+
+    $request->validate([
+        'reason' => 'nullable|string|max:500',
+    ]);
+
+    $order->update([
+        'status'             => 'cancelled',
+        'cancelled_at'       => now(),
+        'cancellation_reason'=> $request->reason,
+    ]);
+
+    foreach ($order->items as $item) {
+        $item->artwork?->update(['status' => 'available']);
+
+        // Notify the artwork owner
+        if ($item->artwork && $item->artwork->user_id !== $request->user()->id) {
+            $owner = $item->artwork->user;
+            $owner?->notify(new OrderCancelled(
+                order: $order,
+                buyerName: $request->user()->name,
+                artworkTitle: $item->artwork->title,
+                artworkId: $item->artwork->id,
+                reason: $request->reason,
+            ));
+        }
+    }
+
+    return back()->with('success', 'Order cancelled successfully.');
+}
 }

@@ -75,24 +75,31 @@ class ArtworkController extends Controller
             ->where('artwork_id', $artwork->id)
             ->value('created_at');
 
-        // Owner sees an order management panel for pending/confirmed/shipped orders
+        // Owner sees an order management panel for pending/confirmed/shipped orders.
+        // Also shows the most recent cancelled order when the artwork is available again.
         $pendingOrder = null;
-        if ($isOwner && $artwork->status === 'reserved') {
+        if ($isOwner) {
+            $statusesToQuery = $artwork->status === 'reserved'
+                ? ['pending', 'confirmed', 'shipped']
+                : ['cancelled'];
+
             $order = Order::whereHas('items', fn ($q) => $q->where('artwork_id', $artwork->id))
-                ->whereIn('status', ['pending', 'confirmed', 'shipped'])
+                ->whereIn('status', $statusesToQuery)
                 ->latest()
                 ->first();
 
             if ($order) {
                 $pendingOrder = [
-                    'id'             => $order->id,
-                    'status'         => $order->status,
-                    'buyer_name'     => $order->full_name,
-                    'phone'          => $order->phone,
-                    'address'        => $order->address,
-                    'payment_method' => $order->payment_method,
-                    'total'          => $order->total,
-                    'created_at'     => $order->created_at->toIso8601String(),
+                    'id'                  => $order->id,
+                    'status'              => $order->status,
+                    'buyer_name'          => $order->full_name,
+                    'phone'               => $order->phone,
+                    'address'             => $order->address,
+                    'payment_method'      => $order->payment_method,
+                    'total'               => $order->total,
+                    'created_at'          => $order->created_at->toIso8601String(),
+                    'cancelled_at'        => $order->cancelled_at?->toIso8601String(),
+                    'cancellation_reason' => $order->cancellation_reason,
                 ];
             }
         }

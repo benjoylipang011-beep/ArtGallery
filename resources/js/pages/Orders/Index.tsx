@@ -35,6 +35,8 @@ interface Order {
     confirmed_at?: string | null;
     shipped_at?: string | null;
     delivered_at?: string | null;
+    cancelled_at?: string | null;
+    cancellation_reason?: string | null;
     items: OrderItem[];
 }
 
@@ -78,12 +80,30 @@ function formatTs(ts: string | null): string {
 function OrderTracker({ order }: { order: Order }) {
     if (order.status === 'cancelled') {
         return (
-            <div className="flex items-center gap-2.5 px-4 py-3 rounded-lg
+            <div className="flex flex-col gap-2 px-4 py-3 rounded-lg
                 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20">
-                <XCircle className="w-4 h-4 text-red-500 dark:text-red-400 shrink-0" />
-                <p className="text-xs font-medium text-red-600 dark:text-red-400">
-                    This order has been cancelled.
-                </p>
+                <div className="flex items-center gap-2.5">
+                    <XCircle className="w-4 h-4 text-red-500 dark:text-red-400 shrink-0" />
+                    <p className="text-xs font-medium text-red-600 dark:text-red-400">
+                        This order has been cancelled.
+                    </p>
+                </div>
+                {order.cancellation_reason !== undefined && (
+                    <p className="text-xs text-red-600/70 dark:text-red-400/70 italic pl-7">
+                        Reason: {order.cancellation_reason ?? 'No reason provided'}
+                    </p>
+                )}
+                {order.cancelled_at && (
+                    <p className="text-xs text-red-600/70 dark:text-red-400/70 pl-7">
+                        Cancelled on: {new Date(order.cancelled_at).toLocaleDateString('en-PH', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        })}
+                    </p>
+                )}
             </div>
         );
     }
@@ -144,25 +164,145 @@ function OrderTracker({ order }: { order: Order }) {
 
 // ── Page ───────────────────────────────────────────────────────
 export default function OrdersPage({ orders }: Props) {
-    const [deletingId, setDeletingId] = useState<number | null>(null);
-    const [confirmId, setConfirmId]   = useState<number | null>(null);
+    const [deletingIds, setDeletingIds] = useState<number[]>([]);
+    const [confirmDeleteIds, setConfirmDeleteIds] = useState<number[] | null>(null);
+    const [selectedOrderForModal, setSelectedOrderForModal] = useState<Order | null>(null);
+    const [cancellingOrder, setCancellingOrder] = useState<Order | null>(null);
+    const [cancelReason, setCancelReason] = useState('');
+    const [cancelOption, setCancelOption] = useState<string>('');
+    const [isSubmittingCancel, setIsSubmittingCancel] = useState(false);
+    const [selectedIds, setSelectedIds] = useState<number[]>([]);
 
-    const handleDelete = (id: number) => {
-        setDeletingId(id);
-        router.delete(`/orders/${id}`, {
-            onSuccess: () => { setConfirmId(null); setDeletingId(null); },
-            onError:   () => setDeletingId(null),
+    const eligibleForDeletion = (status: string) => status === 'delivered' || status === 'cancelled';
+
+    const toggleSelect = (id: number, e: React.MouseEvent) => {
+        e.stopPropagation();
+        setSelectedIds(prev =>
+            prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+        );
+    };
+
+    const selectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const eligibleIds = orders.filter(o => eligibleForDeletion(o.status)).map(o => o.id);
+        if (e.target.checked) {
+            setSelectedIds(eligibleIds);
+        } else {
+            setSelectedIds([]);
+        }
+    };
+
+    const handleBulkDelete = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (selectedIds.length === 0) return;
+        setConfirmDeleteIds(selectedIds);
+    };
+
+    const executeDelete = () => {
+        if (!confirmDeleteIds) return;
+        setDeletingIds(confirmDeleteIds);
+
+        const deleteSequentially = (ids: number[]) => {
+            if (ids.length === 0) {
+                setDeletingIds([]);
+                setConfirmDeleteIds(null);
+                setSelectedIds([]);
+                router.reload({ only: ['orders'] });
+                return;
+            }
+            const [first, ...rest] = ids;
+            router.delete(`/orders/${first}`, {
+                preserveState: true,
+                preserveScroll: true,
+                onSuccess: () => deleteSequentially(rest),
+                onError: () => {
+                    setDeletingIds([]);
+                    setConfirmDeleteIds(null);
+                },
+            });
+        };
+
+        deleteSequentially(confirmDeleteIds);
+    };
+
+    const handleDeleteSingle = (id: number, e: React.MouseEvent) => {
+        e.stopPropagation();
+        setConfirmDeleteIds([id]);
+    };
+
+    const handleCancelOrder = () => {
+        if (!cancellingOrder) return;
+        setIsSubmittingCancel(true);
+        const finalReason = cancelOption === 'Other' ? cancelReason : cancelOption;
+        router.post(`/orders/${cancellingOrder.id}/cancel`, { reason: finalReason }, {
+            onSuccess: () => {
+                setCancellingOrder(null);
+                setCancelReason('');
+                setCancelOption('');
+                setSelectedOrderForModal(null);
+                setIsSubmittingCancel(false);
+                router.reload({ only: ['orders'] });
+            },
+            onError: () => setIsSubmittingCancel(false),
         });
     };
+
+    const cancelOptions = [
+        'Changed my mind',
+        'Found better price elsewhere',
+        'Ordered by mistake',
+        'Shipping too slow',
+        'Other',
+    ];
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="My Orders" />
-            <div className="flex h-full flex-1 flex-col gap-6 rounded-xl p-4 w-full">
 
-                <div className="flex items-center gap-3">
-                    <PackageCheck className="w-6 h-6 text-amber-500" />
-                    <h1 className="text-2xl font-bold text-black dark:text-white">My Orders</h1>
+            <style>{`
+                @keyframes fadeIn {
+                    from { opacity: 0; }
+                    to { opacity: 1; }
+                }
+                @keyframes scaleIn {
+                    from { opacity: 0; transform: scale(0.95); }
+                    to { opacity: 1; transform: scale(1); }
+                }
+                .animate-fade-in {
+                    animation: fadeIn 0.2s ease-out forwards;
+                }
+                .animate-scale-in {
+                    animation: scaleIn 0.25s ease-out forwards;
+                }
+            `}</style>
+
+            <div className="flex h-full flex-1 flex-col gap-6 rounded-xl p-4 w-full">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <PackageCheck className="w-6 h-6 text-amber-500" />
+                        <h1 className="text-2xl font-bold text-black dark:text-white">My Orders</h1>
+                    </div>
+                    {orders.filter(o => eligibleForDeletion(o.status)).length > 0 && (
+                        <div className="flex items-center gap-4">
+                            <label className="flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-400 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={selectedIds.length === orders.filter(o => eligibleForDeletion(o.status)).length && selectedIds.length > 0}
+                                    onChange={selectAll}
+                                    className="w-4 h-4 text-amber-600 rounded border-neutral-300 dark:border-neutral-600"
+                                />
+                                <span>Select all</span>
+                            </label>
+                            {selectedIds.length > 0 && (
+                                <button
+                                    onClick={handleBulkDelete}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 border border-red-200 dark:border-red-800/40 transition-colors"
+                                >
+                                    <Trash2 className="w-4 h-4" />
+                                    Delete Selected ({selectedIds.length})
+                                </button>
+                            )}
+                        </div>
+                    )}
                 </div>
 
                 {orders.length === 0 ? (
@@ -178,57 +318,120 @@ export default function OrdersPage({ orders }: Props) {
                     </div>
                 ) : (
                     <div className="flex flex-col gap-4">
-                        {orders.map((order) => (
-                            <div key={order.id} className="rounded-xl border border-black dark:border-neutral-600 bg-white dark:bg-neutral-900 overflow-hidden">
-
-                                {/* Order header */}
-                                <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
-                                    <div>
-                                        <p className="text-xs text-neutral-500 dark:text-neutral-400">Order #{order.id}</p>
-                                        <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
-                                            {new Date(order.created_at).toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' })}
-                                        </p>
-                                    </div>
-                                    <div className="flex items-center gap-3">
-                                        <span className="text-sm font-bold text-amber-600 dark:text-amber-400">
-                                            ₱{Number(order.total).toLocaleString()}
-                                        </span>
-                                        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full capitalize ${statusStyle[order.status] ?? statusStyle.pending}`}>
-                                            {order.status}
-                                        </span>
-                                        {/* Delete button — only for delivered or cancelled */}
-                                        {(order.status === 'delivered' || order.status === 'cancelled') && (
-                                            <button
-                                                onClick={() => setConfirmId(order.id)}
-                                                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 border border-red-200 dark:border-red-800/40 transition-colors"
-                                                title="Delete order"
-                                            >
-                                                <Trash2 className="w-3.5 h-3.5" />
-                                                Delete
-                                            </button>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {/* ── ORDER TRACKER ── */}
-                                <div className="px-5 py-5 border-b border-neutral-100 dark:border-neutral-800">
-                                    <OrderTracker order={order} />
-
-                                    {/* Gallery note */}
-                                    {order.tracking_note && (
-                                        <div className="mt-4 flex gap-2 items-start px-3 py-2.5 rounded-lg
-                                            bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20">
-                                            <span className="text-amber-500 text-sm mt-px">💬</span>
-                                            <p className="text-xs text-amber-700 dark:text-amber-300 italic">
-                                                "{order.tracking_note}"
-                                            </p>
+                        {orders.map((order) => {
+                            const canDelete = eligibleForDeletion(order.status);
+                            return (
+                                <div
+                                    key={order.id}
+                                    onClick={() => setSelectedOrderForModal(order)}
+                                    className="rounded-xl border border-black dark:border-neutral-600 bg-white dark:bg-neutral-900 overflow-hidden cursor-pointer hover:shadow-lg transition-shadow relative"
+                                >
+                                    {canDelete && (
+                                        <div
+                                            className="absolute left-3 top-1/2 -translate-y-1/2 z-10"
+                                            onClick={(e) => e.stopPropagation()}
+                                        >
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedIds.includes(order.id)}
+                                                onChange={(e) => {
+                                                    e.stopPropagation();
+                                                    toggleSelect(order.id, e as any);
+                                                }}
+                                                className="w-4 h-4 text-amber-600 rounded border-neutral-300 dark:border-neutral-600"
+                                            />
                                         </div>
                                     )}
-                                </div>
+                                    <div className={canDelete ? 'pl-10' : ''}>
+                                        {/* Order header */}
+                                        <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
+                                            <div>
+                                                <p className="text-xs text-neutral-500 dark:text-neutral-400">Order #{order.id}</p>
+                                                <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
+                                                    {new Date(order.created_at).toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' })}
+                                                </p>
+                                            </div>
+                                            <div className="flex items-center gap-3">
+                                                <span className="text-sm font-bold text-amber-600 dark:text-amber-400">
+                                                    ₱{Number(order.total).toLocaleString()}
+                                                </span>
+                                                <span className={`text-xs font-semibold px-2.5 py-1 rounded-full capitalize ${statusStyle[order.status] ?? statusStyle.pending}`}>
+                                                    {order.status}
+                                                </span>
+                                                {/* Individual delete button */}
+                                                {canDelete && (
+                                                    <button
+                                                        onClick={(e) => handleDeleteSingle(order.id, e)}
+                                                        className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 border border-red-200 dark:border-red-800/40 transition-colors"
+                                                        title="Delete order"
+                                                    >
+                                                        <Trash2 className="w-3.5 h-3.5" />
+                                                        Delete
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
 
-                                {/* Order items */}
-                                <div className="px-5 py-4 flex flex-col gap-3">
-                                    {order.items.map((item) => (
+                                        {/* Order items */}
+                                        <div className="px-5 py-4 flex flex-col gap-3">
+                                            {order.items.map((item) => (
+                                                <div
+                                                    key={item.id}
+                                                    className="flex gap-3 items-center p-3 border border-neutral-200 dark:border-neutral-700 rounded-lg"
+                                                >
+                                                    <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0 bg-neutral-100 dark:bg-neutral-800">
+                                                        {item.artwork.image ? (
+                                                            <img src={`/storage/${item.artwork.image}`} alt={item.artwork.title} className="w-full h-full object-cover" />
+                                                        ) : (
+                                                            <div className="w-full h-full bg-gradient-to-br from-amber-300 to-orange-500" />
+                                                        )}
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="text-sm font-medium text-black dark:text-white truncate">{item.artwork.title}</p>
+                                                        <p className="text-xs text-neutral-500 dark:text-neutral-400">{item.artwork.artist}</p>
+                                                    </div>
+                                                    <span className="text-sm font-semibold text-amber-600 dark:text-amber-400">
+                                                        ₱{Number(item.price).toLocaleString()}
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        {/* Delivery info footer */}
+                                        <div className="px-5 py-3 bg-neutral-50 dark:bg-neutral-800/50 border-t border-neutral-100 dark:border-neutral-800 flex flex-wrap gap-x-6 gap-y-1 text-xs text-neutral-600 dark:text-neutral-400">
+                                            <span>📦 {order.full_name} · {order.phone}</span>
+                                            <span>📍 {order.address}</span>
+                                            <span>💳 {order.payment_method === 'cash_on_delivery' ? 'Cash on Delivery' : 'GCash'}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+            </div>
+
+            {/* ── Order detail modal ── */}
+            {selectedOrderForModal && (
+                <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+                    <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl border border-black dark:border-neutral-600 w-full max-w-md max-h-[90vh] flex flex-col animate-scale-in">
+                        <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200 dark:border-neutral-800">
+                            <h3 className="text-lg font-bold text-black dark:text-white">
+                                Order #{selectedOrderForModal.id}
+                            </h3>
+                            <button
+                                onClick={() => setSelectedOrderForModal(null)}
+                                className="text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white text-2xl leading-none"
+                            >
+                                ×
+                            </button>
+                        </div>
+                        <div className="overflow-y-auto p-6">
+                            {/* Items */}
+                            <div className="mb-6">
+                                <h4 className="text-sm font-semibold text-black dark:text-white mb-3">Items</h4>
+                                <div className="space-y-3">
+                                    {selectedOrderForModal.items.map((item) => (
                                         <div key={item.id} className="flex gap-3 items-center">
                                             <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0 bg-neutral-100 dark:bg-neutral-800">
                                                 {item.artwork.image ? (
@@ -247,22 +450,106 @@ export default function OrdersPage({ orders }: Props) {
                                         </div>
                                     ))}
                                 </div>
-
-                                {/* Delivery info */}
-                                <div className="px-5 py-3 bg-neutral-50 dark:bg-neutral-800/50 border-t border-neutral-100 dark:border-neutral-800 flex flex-wrap gap-x-6 gap-y-1 text-xs text-neutral-600 dark:text-neutral-400">
-                                    <span>📦 {order.full_name} · {order.phone}</span>
-                                    <span>📍 {order.address}</span>
-                                    <span>💳 {order.payment_method === 'cash_on_delivery' ? 'Cash on Delivery' : 'GCash'}</span>
-                                </div>
-
                             </div>
-                        ))}
-                    </div>
-                )}
-            </div>
 
-            {/* ── Delete confirmation modal ── */}
-            {confirmId !== null && (
+                            {/* Order progress */}
+                            <div className="mb-6">
+                                <h4 className="text-sm font-semibold text-black dark:text-white mb-3">Order Progress</h4>
+                                <OrderTracker order={selectedOrderForModal} />
+                            </div>
+
+                            {/* Customer details */}
+                            <div className="mb-6 p-4 bg-neutral-50 dark:bg-neutral-800/50 rounded-lg text-sm">
+                                <p className="font-medium text-black dark:text-white mb-2">Customer</p>
+                                <p className="text-neutral-600 dark:text-neutral-400">📦 {selectedOrderForModal.full_name} · {selectedOrderForModal.phone}</p>
+                                <p className="text-neutral-600 dark:text-neutral-400">📍 {selectedOrderForModal.address}</p>
+                                <p className="text-neutral-600 dark:text-neutral-400">💳 {selectedOrderForModal.payment_method === 'cash_on_delivery' ? 'Cash on Delivery' : 'GCash'}</p>
+                            </div>
+
+                            {/* Cancel button – only if not cancelled */}
+                            {selectedOrderForModal.status !== 'cancelled' && (
+                                <>
+                                    <button
+                                        onClick={() => {
+                                            setCancellingOrder(selectedOrderForModal);
+                                            setCancelOption('');
+                                            setCancelReason('');
+                                        }}
+                                        className="w-full py-3 rounded-lg bg-red-600 hover:bg-red-700 text-white font-semibold transition flex items-center justify-center gap-2"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                        Cancel Order
+                                    </button>
+                                    <p className="text-xs text-neutral-500 dark:text-neutral-400 text-center mt-3">
+                                        Cancelling will remove the entire order.
+                                    </p>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ── Cancel reason modal ── */}
+            {cancellingOrder && (
+                <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+                    <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl border border-black dark:border-neutral-600 w-full max-w-md p-6 flex flex-col gap-4 animate-scale-in">
+                        <h3 className="text-lg font-bold text-black dark:text-white">Cancel Order #{cancellingOrder.id}</h3>
+                        <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                            Please tell us why you're cancelling this order:
+                        </p>
+                        <div className="space-y-2">
+                            {cancelOptions.map((option) => (
+                                <label key={option} className="flex items-center gap-2 text-sm text-black dark:text-white">
+                                    <input
+                                        type="radio"
+                                        name="cancelReason"
+                                        value={option}
+                                        checked={cancelOption === option}
+                                        onChange={(e) => setCancelOption(e.target.value)}
+                                        className="w-4 h-4 text-amber-600"
+                                    />
+                                    {option}
+                                </label>
+                            ))}
+                        </div>
+                        {cancelOption === 'Other' && (
+                            <textarea
+                                value={cancelReason}
+                                onChange={(e) => setCancelReason(e.target.value)}
+                                placeholder="Please specify your reason..."
+                                rows={3}
+                                className="w-full rounded-lg border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 p-3 text-sm text-black dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-transparent mt-2"
+                            />
+                        )}
+                        <div className="flex gap-3 mt-2">
+                            <button
+                                onClick={() => setCancellingOrder(null)}
+                                disabled={isSubmittingCancel}
+                                className="flex-1 rounded-lg border border-neutral-200 dark:border-neutral-700 text-black dark:text-white font-medium py-2.5 text-sm hover:bg-neutral-50 dark:hover:bg-neutral-800 transition disabled:opacity-50"
+                            >
+                                Back
+                            </button>
+                            <button
+                                onClick={handleCancelOrder}
+                                disabled={isSubmittingCancel || !cancelOption}
+                                className="flex-1 rounded-lg bg-red-600 hover:bg-red-700 text-white font-semibold py-2.5 text-sm transition flex items-center justify-center gap-2 disabled:opacity-60"
+                            >
+                                {isSubmittingCancel ? (
+                                    <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                                    </svg>
+                                ) : null}
+                                Confirm Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ── Delete confirmation modal (bulk) ── */}
+            {confirmDeleteIds && (
                 <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
                     <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl border border-black dark:border-neutral-600 w-full max-w-sm p-6 flex flex-col gap-4">
                         <div className="flex items-center gap-3">
@@ -270,27 +557,27 @@ export default function OrdersPage({ orders }: Props) {
                                 <Trash2 className="w-5 h-5 text-red-600 dark:text-red-400" />
                             </div>
                             <div>
-                                <h3 className="font-bold text-black dark:text-white">Delete Order?</h3>
-                                <p className="text-sm text-black/50 dark:text-neutral-400">Order #{confirmId}</p>
+                                <h3 className="font-bold text-black dark:text-white">Delete {confirmDeleteIds.length} Order{confirmDeleteIds.length > 1 ? 's' : ''}?</h3>
+                                <p className="text-sm text-black/50 dark:text-neutral-400">Order IDs: {confirmDeleteIds.join(', ')}</p>
                             </div>
                         </div>
                         <p className="text-sm text-black dark:text-neutral-300">
-                            This will permanently remove the order from your history. This action cannot be undone.
+                            This will permanently remove these orders from your history. This action cannot be undone.
                         </p>
                         <div className="flex gap-3 mt-1">
                             <button
-                                onClick={() => setConfirmId(null)}
-                                disabled={deletingId !== null}
+                                onClick={() => setConfirmDeleteIds(null)}
+                                disabled={deletingIds.length > 0}
                                 className="flex-1 rounded-lg border border-neutral-200 dark:border-neutral-700 text-black dark:text-white font-medium py-2.5 text-sm hover:bg-neutral-50 dark:hover:bg-neutral-800 transition disabled:opacity-50"
                             >
                                 Cancel
                             </button>
                             <button
-                                onClick={() => handleDelete(confirmId)}
-                                disabled={deletingId !== null}
+                                onClick={executeDelete}
+                                disabled={deletingIds.length > 0}
                                 className="flex-1 rounded-lg bg-red-600 hover:bg-red-700 text-white font-semibold py-2.5 text-sm transition flex items-center justify-center gap-2 disabled:opacity-60"
                             >
-                                {deletingId !== null ? (
+                                {deletingIds.length > 0 ? (
                                     <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
                                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
                                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>

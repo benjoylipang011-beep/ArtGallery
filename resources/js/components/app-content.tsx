@@ -8,7 +8,7 @@ type Props = React.ComponentProps<'main'> & {
 export function AppContent({ variant = 'header', children, className = '', ...props }: Props) {
     if (variant === 'sidebar') {
         return (
-            <SidebarInset className={`!p-0 !mx-0 !max-w-none w-full ${className}`} {...props}>
+            <SidebarInset className={`!p-0 !mx-0 !max-w-none w-full flex flex-col h-svh overflow-hidden ${className}`} {...props}>
                 {children}
             </SidebarInset>
         );

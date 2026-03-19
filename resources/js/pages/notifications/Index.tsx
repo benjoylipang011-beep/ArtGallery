@@ -2,7 +2,7 @@ import { Head, router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 import { useState, useEffect } from 'react';
-import { Bell, CheckCheck, Trash2, ShoppingBag, Package, Info, BellOff, BellRing } from 'lucide-react';
+import { Bell, CheckCheck, Trash2, ShoppingBag, Package, Info, BellOff, BellRing, XCircle, Loader2 } from 'lucide-react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Notifications', href: '/notifications' },
@@ -14,6 +14,7 @@ interface NotificationData {
     action_url?: string;
     buyer_name?: string;
     artwork?: string;
+    reason?: string; // added for cancellation reason
 }
 
 interface Notification {
@@ -35,26 +36,25 @@ interface Props {
 }
 
 const DOT_COLORS: Record<string, string> = {
-    artwork_sold:  'bg-green-500',
-    artist_joined: 'bg-blue-500',
-    exhibition:    'bg-red-500',
-    comment:       'bg-gray-500',
-    default:       'bg-amber-500',
+    artwork_sold:   'bg-green-500',
+    artist_joined:  'bg-blue-500',
+    exhibition:     'bg-red-500',
+    comment:        'bg-gray-500',
+    order_cancelled: 'bg-red-500',
+    default:        'bg-amber-500',
 };
 
 const TYPE_ICONS: Record<string, React.ElementType> = {
-    artwork_sold:  ShoppingBag,
-    artist_joined: Package,
-    default:       Info,
+    artwork_sold:   ShoppingBag,
+    artist_joined:  Package,
+    order_cancelled: XCircle,
+    default:        Info,
 };
 
-// ── CSRF token ────────────────────────────────────────────────
-// Laravel sets an XSRF-TOKEN cookie. We read it and send it back
-// as X-XSRF-TOKEN (this is the standard Laravel/Axios convention).
+// ── CSRF token helper ─────────────────────────────────────────
 function xsrfToken(): string {
     const match = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]+)/);
     if (match) return decodeURIComponent(match[1]);
-    // fallback: meta tag (set in the Blade layout by @csrf)
     return (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content ?? '';
 }
 
@@ -64,7 +64,7 @@ function apiFetch(method: string, url: string): Promise<Response> {
         headers: {
             'Accept':           'application/json',
             'X-Requested-With': 'XMLHttpRequest',
-            'X-XSRF-TOKEN':     xsrfToken(),   // ← X-XSRF-TOKEN, not X-CSRF-TOKEN
+            'X-XSRF-TOKEN':     xsrfToken(),
         },
     });
 }
@@ -73,10 +73,13 @@ export default function NotificationsIndex({ notifications }: Props) {
     const [items, setItems]        = useState<Notification[]>(notifications.data);
     const [unreadCount, setUnread] = useState(() => notifications.data.filter(n => !n.read_at).length);
     const [loading, setLoading]    = useState<string | null>(null);
+    const [selectedIds, setSelectedIds] = useState<string[]>([]);
+    const [bulkDeleting, setBulkDeleting] = useState(false);
+    const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
 
     const allRead = items.length > 0 && items.every(n => n.read_at !== null);
 
-    // ── Sync sidebar badge whenever unreadCount changes ────────────
+    // ── Sync sidebar badge ────────────────────────────────────
     useEffect(() => {
         localStorage.setItem('notif_unread_count', String(unreadCount));
         window.dispatchEvent(
@@ -84,7 +87,7 @@ export default function NotificationsIndex({ notifications }: Props) {
         );
     }, [unreadCount]);
 
-    // ── Mark single as READ ────────────────────────────────────────
+    // ── Mark single as READ ───────────────────────────────────
     const markRead = async (notif: Notification) => {
         if (notif.read_at) {
             if (notif.data.action_url) router.visit(notif.data.action_url);
@@ -100,7 +103,7 @@ export default function NotificationsIndex({ notifications }: Props) {
         if (res.ok && notif.data.action_url) router.visit(notif.data.action_url);
     };
 
-    // ── Mark single as UNREAD ──────────────────────────────────────
+    // ── Mark single as UNREAD ─────────────────────────────────
     const markUnread = async (id: string, e: React.MouseEvent) => {
         e.stopPropagation();
         setLoading(id);
@@ -112,7 +115,50 @@ export default function NotificationsIndex({ notifications }: Props) {
         setLoading(null);
     };
 
-    // ── Mark all as READ ───────────────────────────────────────────
+    // ── Dismiss (delete) single ───────────────────────────────
+    const dismiss = async (id: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        const notif = items.find(n => n.id === id);
+        setItems(prev => prev.filter(n => n.id !== id));
+        if (notif && !notif.read_at) setUnread(c => Math.max(0, c - 1));
+        setSelectedIds(prev => prev.filter(i => i !== id));
+        await apiFetch('DELETE', `/notifications/${id}`);
+    };
+
+    // ── Bulk actions ──────────────────────────────────────────
+    const eligibleIds = items.map(n => n.id); // all notifications are deletable
+    const selectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.checked) {
+            setSelectedIds(eligibleIds);
+        } else {
+            setSelectedIds([]);
+        }
+    };
+
+    const toggleSelect = (id: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        setSelectedIds(prev =>
+            prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+        );
+    };
+
+    const handleBulkDelete = () => {
+        if (selectedIds.length === 0) return;
+        setConfirmBulkDelete(true);
+    };
+
+    const executeBulkDelete = async () => {
+        setBulkDeleting(true);
+        setConfirmBulkDelete(false);
+        const unreadToRemove = items.filter(n => selectedIds.includes(n.id) && !n.read_at).length;
+        await Promise.all(selectedIds.map(id => apiFetch('DELETE', `/notifications/${id}`)));
+        setItems(prev => prev.filter(n => !selectedIds.includes(n.id)));
+        setUnread(prev => Math.max(0, prev - unreadToRemove));
+        setSelectedIds([]);
+        setBulkDeleting(false);
+    };
+
+    // ── Mark all as READ ──────────────────────────────────────
     const markAllRead = async () => {
         const res = await apiFetch('POST', '/notifications/read-all');
         if (!res.ok) return;
@@ -120,7 +166,7 @@ export default function NotificationsIndex({ notifications }: Props) {
         setUnread(0);
     };
 
-    // ── Mark all as UNREAD ─────────────────────────────────────────
+    // ── Mark all as UNREAD ────────────────────────────────────
     const markAllUnread = async () => {
         const res = await apiFetch('POST', '/notifications/unread-all');
         if (!res.ok) return;
@@ -128,21 +174,12 @@ export default function NotificationsIndex({ notifications }: Props) {
         setUnread(items.length);
     };
 
-    // ── Dismiss (delete) ───────────────────────────────────────────
-    const dismiss = async (id: string, e: React.MouseEvent) => {
-        e.stopPropagation();
-        const notif = items.find(n => n.id === id);
-        setItems(prev => prev.filter(n => n.id !== id));
-        if (notif && !notif.read_at) setUnread(c => Math.max(0, c - 1));
-        await apiFetch('DELETE', `/notifications/${id}`);
-    };
-
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Notifications" />
             <div className="flex h-full flex-1 flex-col gap-6 p-4 w-full">
 
-                {/* Header */}
+                {/* Header with bulk controls */}
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <Bell className="w-6 h-6 text-black dark:text-white" />
@@ -154,9 +191,33 @@ export default function NotificationsIndex({ notifications }: Props) {
                         )}
                     </div>
 
-                    {/* Bulk action buttons */}
+                    {/* Bulk actions */}
                     {items.length > 0 && (
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-4">
+                            <label className="flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-400 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={selectedIds.length === eligibleIds.length && selectedIds.length > 0}
+                                    onChange={selectAll}
+                                    className="w-4 h-4 text-amber-600 rounded border-neutral-300 dark:border-neutral-600"
+                                />
+                                <span>Select all</span>
+                            </label>
+                            {selectedIds.length > 0 && (
+                                <button
+                                    onClick={handleBulkDelete}
+                                    disabled={bulkDeleting}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 border border-red-200 dark:border-red-800/40 transition-colors disabled:opacity-50"
+                                >
+                                    {bulkDeleting ? (
+                                        <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                                        </svg>
+                                    ) : <Trash2 className="w-4 h-4" />}
+                                    Delete Selected ({selectedIds.length})
+                                </button>
+                            )}
                             {unreadCount > 0 && (
                                 <button
                                     onClick={markAllRead}
@@ -193,6 +254,7 @@ export default function NotificationsIndex({ notifications }: Props) {
                             const IconComponent = TYPE_ICONS[notifType] ?? TYPE_ICONS.default;
                             const isUnread      = !notif.read_at;
                             const isSale        = notifType === 'artwork_sold';
+                            const isCancelled   = notifType === 'order_cancelled';
 
                             return (
                                 <div
@@ -204,8 +266,18 @@ export default function NotificationsIndex({ notifications }: Props) {
                                             : 'border-gray-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 opacity-60'
                                     } hover:opacity-100`}
                                 >
-                                    {/* Unread dot */}
-                                    {isUnread && (
+                                    {/* Checkbox */}
+                                    <div onClick={(e) => e.stopPropagation()} className="shrink-0 pt-1">
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedIds.includes(notif.id)}
+                                            onChange={(e) => toggleSelect(notif.id, e as any)}
+                                            className="w-4 h-4 text-amber-600 rounded border-neutral-300 dark:border-neutral-600"
+                                        />
+                                    </div>
+
+                                    {/* Unread dot (only for non-sale/cancelled types) */}
+                                    {isUnread && !isSale && !isCancelled && (
                                         <span className={`absolute top-4 right-4 w-2 h-2 rounded-full ${DOT_COLORS[notifType] ?? DOT_COLORS.default}`} />
                                     )}
 
@@ -213,6 +285,8 @@ export default function NotificationsIndex({ notifications }: Props) {
                                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
                                         isSale
                                             ? 'bg-green-500 text-white'
+                                            : isCancelled
+                                            ? 'bg-red-500 text-white'
                                             : isUnread
                                                 ? 'bg-black dark:bg-white text-white dark:text-black'
                                                 : 'bg-gray-100 dark:bg-neutral-800 text-black dark:text-white'
@@ -231,6 +305,13 @@ export default function NotificationsIndex({ notifications }: Props) {
                                                 </span>{' '}
                                                 purchased your artwork.
                                             </p>
+                                        ) : isCancelled && notif.data.buyer_name ? (
+                                            <p className={`text-sm leading-snug ${isUnread ? 'font-semibold text-black dark:text-white' : 'text-black dark:text-white'}`}>
+                                                <span className="text-red-600 dark:text-red-400 font-bold">
+                                                    {notif.data.buyer_name}
+                                                </span>{' '}
+                                                cancelled their order.
+                                            </p>
                                         ) : (
                                             <p className={`text-sm leading-snug ${isUnread ? 'font-semibold text-black dark:text-white' : 'text-black dark:text-white'}`}>
                                                 {notif.data.message}
@@ -244,14 +325,47 @@ export default function NotificationsIndex({ notifications }: Props) {
                                             </p>
                                         )}
 
+                                        {/* Cancellation reason — always show, fallback if null */}
+                                        {isCancelled && (
+                                            <p className="text-xs text-red-600/70 dark:text-red-400/70 mt-1 italic">
+                                                Reason: {notif.data.reason ?? 'No reason provided'}
+                                            </p>
+                                        )}
+
                                         <p className="text-xs text-black/40 dark:text-white/40 mt-1">
                                             {notif.human_time}
                                         </p>
+
+                                        {/* Bottom badge — below timestamp, clear of action buttons */}
+                                        {isSale && (
+                                            <span className="inline-flex items-center gap-1 mt-2 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">
+                                                <ShoppingBag className="w-3 h-3" />
+                                                Purchased
+                                            </span>
+                                        )}
+                                        {isCancelled && (
+                                            <span className="inline-flex items-center gap-1 mt-2 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400">
+                                                <XCircle className="w-3 h-3" />
+                                                Cancelled
+                                            </span>
+                                        )}
                                     </div>
 
-                                    {/* Hover actions: mark unread + dismiss */}
+                                    {/* Per-item actions */}
                                     <div className="absolute top-3 right-3 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        {/* Toggle read/unread */}
+
+                                        {/* Mark as READ */}
+                                        {isUnread && (
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); markRead(notif); }}
+                                                title="Mark as read"
+                                                className="p-1 rounded-lg text-black/30 dark:text-white/30 hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 transition-all"
+                                            >
+                                                <CheckCheck className="w-3.5 h-3.5" />
+                                            </button>
+                                        )}
+
+                                        {/* Mark as UNREAD */}
                                         {!isUnread && (
                                             <button
                                                 onClick={(e) => markUnread(notif.id, e)}
@@ -275,10 +389,7 @@ export default function NotificationsIndex({ notifications }: Props) {
                                     {/* Loading spinner */}
                                     {loading === notif.id && (
                                         <div className="absolute inset-0 flex items-center justify-center bg-white/60 dark:bg-neutral-900/60 rounded-2xl">
-                                            <svg className="animate-spin w-5 h-5 text-black dark:text-white" viewBox="0 0 24 24" fill="none">
-                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
-                                            </svg>
+                                        <Loader2 className="animate-spin w-5 h-5 text-black dark:text-white" />
                                         </div>
                                     )}
                                 </div>
@@ -312,6 +423,40 @@ export default function NotificationsIndex({ notifications }: Props) {
                     </div>
                 )}
             </div>
+            {/* ── Bulk delete confirm modal ── */}
+            {confirmBulkDelete && (
+                <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                    <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-2xl border border-black dark:border-neutral-600 w-full max-w-sm p-6 flex flex-col gap-4">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center shrink-0">
+                                <Trash2 className="w-5 h-5 text-red-600 dark:text-red-400" />
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-black dark:text-white">Delete {selectedIds.length} Notification{selectedIds.length > 1 ? 's' : ''}?</h3>
+                                <p className="text-sm text-neutral-500 dark:text-neutral-400">This action cannot be undone.</p>
+                            </div>
+                        </div>
+                        <p className="text-sm text-black dark:text-neutral-300">
+                            Are you sure you want to permanently remove the selected notifications?
+                        </p>
+                        <div className="flex gap-3 mt-1">
+                            <button
+                                onClick={() => setConfirmBulkDelete(false)}
+                                className="flex-1 rounded-lg border border-neutral-200 dark:border-neutral-700 text-black dark:text-white font-medium py-2.5 text-sm hover:bg-neutral-50 dark:hover:bg-neutral-800 transition"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={executeBulkDelete}
+                                className="flex-1 rounded-lg bg-red-600 hover:bg-red-700 text-white font-semibold py-2.5 text-sm transition flex items-center justify-center gap-2"
+                            >
+                                <Trash2 className="w-4 h-4" />
+                                Yes, Delete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </AppLayout>
     );
 }

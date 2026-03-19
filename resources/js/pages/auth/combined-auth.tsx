@@ -370,7 +370,7 @@ function MobileTealBanner({ title, subtitle, buttonLabel, onClick }: {
                 <div className="absolute rounded-full bg-white/10" style={{ width: 150, height: 150, bottom: -40, right: -40 }} />
                 <div className="absolute rounded-full bg-white/[0.07]" style={{ width: 100, height: 100, top: -30, left: -30 }} />
                 <img
-                    src="/Gemini_Generated_Image_d9cjlzd9cjlzd9cj-removebg-preview.png"
+                    src="/Gemini_Generated_Image_dkoz8wdkoz8wdkoz-removebg-preview.png"
                     alt="Logo"
                     className="relative h-14 w-14 rounded-2xl object-contain shadow-lg"
                     onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
@@ -1119,7 +1119,7 @@ export default function CombinedAuth({ status, canResetPassword, canRegister }: 
                                     <div className="absolute rounded-full bg-white/10" style={{ width: 150, height: 150, bottom: -40, right: -40 }} />
                                     <div className="absolute rounded-full bg-white/[0.07]" style={{ width: 100, height: 100, top: -30, left: -30 }} />
                                     <img
-                                        src="/Gemini_Generated_Image_d9cjlzd9cjlzd9cj-removebg-preview.png"
+                                        src="/Gemini_Generated_Image_dkoz8wdkoz8wdkoz-removebg-preview.png"
                                         alt="Logo"
                                         className="relative h-14 w-14 rounded-2xl object-contain shadow-lg"
                                         onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
@@ -1310,7 +1310,7 @@ export default function CombinedAuth({ status, canResetPassword, canRegister }: 
                                 {isLogin ? (
                                     <>
                                         <img
-                                            src="/Gemini_Generated_Image_d9cjlzd9cjlzd9cj-removebg-preview.png"
+                                            src="/Gemini_Generated_Image_dkoz8wdkoz8wdkoz-removebg-preview.png"
                                             alt="Logo"
                                             className="h-16 w-16 rounded-2xl object-contain shadow-lg"
                                             onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
