@@ -281,17 +281,35 @@ export default function NotificationsIndex({ notifications }: Props) {
                                         <span className={`absolute top-4 right-4 w-2 h-2 rounded-full ${DOT_COLORS[notifType] ?? DOT_COLORS.default}`} />
                                     )}
 
-                                    {/* Icon */}
-                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-                                        isSale
-                                            ? 'bg-green-500 text-white'
-                                            : isCancelled
-                                            ? 'bg-red-500 text-white'
-                                            : isUnread
-                                                ? 'bg-black dark:bg-white text-white dark:text-black'
-                                                : 'bg-gray-100 dark:bg-neutral-800 text-black dark:text-white'
-                                    }`}>
-                                        <IconComponent className="w-5 h-5" />
+                                    {/* Artwork image OR icon fallback */}
+                                    <div className="relative shrink-0">
+                                        {notif.data.artwork_image ? (
+                                            <img
+                                                src={notif.data.artwork_image}
+                                                alt={notif.data.artwork ?? 'Artwork'}
+                                                className="w-12 h-12 rounded-xl object-cover border border-black/10 dark:border-white/10"
+                                            />
+                                        ) : (
+                                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                                                isSale
+                                                    ? 'bg-green-500 text-white'
+                                                    : isCancelled
+                                                    ? 'bg-red-500 text-white'
+                                                    : isUnread
+                                                        ? 'bg-black dark:bg-white text-white dark:text-black'
+                                                        : 'bg-gray-100 dark:bg-neutral-800 text-black dark:text-white'
+                                            }`}>
+                                                <IconComponent className="w-5 h-5" />
+                                            </div>
+                                        )}
+                                        {/* Typed badge pinned to bottom-right of image */}
+                                        {notif.data.artwork_image && (
+                                            <span className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center shadow ${
+                                                isSale ? 'bg-green-500' : isCancelled ? 'bg-red-500' : 'bg-black dark:bg-white'
+                                            }`}>
+                                                <IconComponent className="w-3 h-3 text-white dark:text-black" />
+                                            </span>
+                                        )}
                                     </div>
 
                                     {/* Content */}

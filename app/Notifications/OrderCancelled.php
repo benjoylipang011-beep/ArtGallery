@@ -11,11 +11,12 @@ class OrderCancelled extends Notification
     use Queueable;
 
     public function __construct(
-        protected Order $order,
-        protected string $buyerName,
-        protected string $artworkTitle,
-        protected int $artworkId,
+        protected Order   $order,
+        protected string  $buyerName,
+        protected string  $artworkTitle,
+        protected int     $artworkId,
         protected ?string $reason = null,
+        protected ?string $artworkImage = null,  // pass $artwork->image (raw path)
     ) {}
 
     public function via(object $notifiable): array
@@ -26,12 +27,13 @@ class OrderCancelled extends Notification
     public function toDatabase(object $notifiable): array
     {
         return [
-            'type'       => 'order_cancelled',
-            'message'    => "{$this->buyerName} cancelled their order for \"{$this->artworkTitle}\".",
-            'buyer_name' => $this->buyerName,
-            'artwork'    => $this->artworkTitle,
-            'action_url' => "/products/{$this->artworkId}",
-            'reason'     => $this->reason,
+            'type'          => 'order_cancelled',
+            'message'       => "{$this->buyerName} cancelled their order for \"{$this->artworkTitle}\".",
+            'buyer_name'    => $this->buyerName,
+            'artwork'       => $this->artworkTitle,
+            'artwork_image' => $this->artworkImage,     // raw path — controller calls Storage::url()
+            'action_url'    => "/products/{$this->artworkId}",
+            'reason'        => $this->reason,
         ];
     }
 }

@@ -131,7 +131,7 @@ export default function Welcome({ canRegister = true }: { canRegister?: boolean 
                         <img
                             src="/Gemini_Generated_Image_dkoz8wdkoz8wdkoz-removebg-preview.png"
                             alt="Bench Art Gallery"
-                            className="w-9 h-9 object-contain"
+                            className="w-12 h-12 object-contain"
                         />
                         <span className="text-neutral-800 dark:text-neutral-200 font-medium text-sm tracking-wide hidden sm:block">
                             Bench Art Gallery
@@ -239,9 +239,15 @@ export default function Welcome({ canRegister = true }: { canRegister?: boolean 
                                 // Scatter phase
                                 <div className="relative w-full h-full flex items-center justify-center">
                                     {artImages.map((image, index) => {
+                                        const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
+                                        const cardPx = isMobile ? 88 : 160;
                                         const rotations = [-12, 18, -8, 22, -15, 10];
-                                        const txValues = [-140, -80, 90, 120, -110, 130];
-                                        const tyValues = [-90, 70, -100, 110, 80, -70];
+                                        const txValues = isMobile
+                                            ? [-80, -45, 55, 75, -65, 80]
+                                            : [-180, -100, 120, 160, -140, 170];
+                                        const tyValues = isMobile
+                                            ? [-55, 40, -60, 65, 45, -42]
+                                            : [-120, 90, -130, 140, 100, -90];
 
                                         return (
                                             <div
@@ -250,12 +256,12 @@ export default function Welcome({ canRegister = true }: { canRegister?: boolean 
                                                 style={{
                                                     left: '50%',
                                                     top: '50%',
-                                                    marginLeft: '-144px',
-                                                    marginTop: '-144px',
+                                                    marginLeft: `-${cardPx}px`,
+                                                    marginTop: `-${cardPx}px`,
                                                 }}
                                             >
                                                 <div
-                                                    className="w-72 h-72 animate-scatter"
+                                                    className={`${isMobile ? 'w-44 h-44' : 'w-80 h-80'} animate-scatter`}
                                                     style={{
                                                         '--rotation': `${rotations[index]}deg`,
                                                         '--tx': `${txValues[index]}px`,
@@ -313,7 +319,7 @@ export default function Welcome({ canRegister = true }: { canRegister?: boolean 
                                                             <span className="text-neutral-400 dark:text-neutral-600 text-sm">
                                                                 Art {index + 1}
                                                             </span>
-                                                        </div>
+                                                        </div> 
                                                         <img
                                                             src={image}
                                                             alt={`Art ${index + 1}`}

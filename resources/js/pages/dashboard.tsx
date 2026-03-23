@@ -370,7 +370,7 @@ function ArtworkCard({
   onToggleSave: (id: number) => void;
 }) {
   const grad = GRADIENTS[index % GRADIENTS.length];
-  return (
+  return ( 
     <div className="rounded-2xl border border-black dark:border-neutral-600 bg-white dark:bg-neutral-900 overflow-hidden flex flex-col hover:shadow-lg transition-shadow duration-200">
       {/* Image area: shorter on mobile, taller on sm+ */}
       <div className={`h-36 sm:h-44 relative flex items-end justify-between p-2 sm:p-3 ${!artwork.image ? grad : ''}`}>

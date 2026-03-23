@@ -17,7 +17,6 @@ class ArtworkPurchased extends Notification
         public readonly int     $orderId,
     ) {}
 
-    /** Store in the database only — no email, no admin. */
     public function via(object $notifiable): array
     {
         return ['database'];
@@ -26,11 +25,12 @@ class ArtworkPurchased extends Notification
     public function toDatabase(object $notifiable): array
     {
         return [
-            'type'       => 'artwork_sold',
-            'message'    => "{$this->buyer->name} purchased your artwork \"{$this->artwork->title}\".",
-            'buyer_name' => $this->buyer->name,
-            'artwork'    => $this->artwork->title,
-            'action_url' => "/products/{$this->artwork->id}",
+            'type'          => 'artwork_sold',
+            'message'       => "{$this->buyer->name} purchased your artwork \"{$this->artwork->title}\".",
+            'buyer_name'    => $this->buyer->name,
+            'artwork'       => $this->artwork->title,
+            'artwork_image' => $this->artwork->image,   // raw path — controller calls Storage::url()
+            'action_url'    => "/products/{$this->artwork->id}",
         ];
     }
 }

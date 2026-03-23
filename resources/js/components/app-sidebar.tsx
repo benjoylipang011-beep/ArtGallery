@@ -156,7 +156,16 @@ export function AppSidebar() {
     }, [url]);
 
     return (
-        <Sidebar collapsible="icon" variant="inset" style={{ "--sidebar": "#0d1b2a", "--sidebar-foreground": "255 255 255", "--sidebar-accent": "#1a2e45", "--sidebar-accent-foreground": "#ffffff" } as React.CSSProperties}>
+        <Sidebar collapsible="icon" variant="inset" style={{
+            "--sidebar":                      "#0d1b2a",
+            "--sidebar-foreground":           "#f1f5f9",
+            "--sidebar-primary":              "#f59e0b",
+            "--sidebar-primary-foreground":   "#0d1b2a",
+            "--sidebar-accent":               "#1e3a5f",
+            "--sidebar-accent-foreground":    "#f1f5f9",
+            "--sidebar-border":               "rgba(255,255,255,0.08)",
+            "--sidebar-ring":                 "#f59e0b",
+        } as React.CSSProperties}>
             <SidebarHeader className="p-0">
                 <SidebarMenu>
                     <SidebarMenuItem>
@@ -166,7 +175,7 @@ export function AppSidebar() {
                                 alt="Bench Art Gallery Logo"
                                 className="w-24 h-24 object-contain transition-all -mb-3"
                             />
-                            <span className="text-base font-black text-white tracking-wide text-center leading-tight group-data-[collapsible=icon]:hidden">
+                            <span className="text-base font-black tracking-wide text-center leading-tight group-data-[collapsible=icon]:hidden" style={{ color: '#f1f5f9' }}>
                                 Bench Art Gallery
                             </span>
                         </div>
